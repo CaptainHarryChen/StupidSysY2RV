@@ -45,5 +45,8 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp"
+    },
+    "cmake.debugConfig": {
+        "args":["-koopa", "../test/hello.c", "-o", "../test/hello.koopa"]
     }
 }
