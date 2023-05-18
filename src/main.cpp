@@ -46,10 +46,10 @@ int main(int argc, const char *argv[])
     }
     char *buffer = new char[1000];
     size_t sz = 1000u;
-    eno = koopa_dump_llvm_to_string(kp, buffer, &sz);
+    eno = koopa_dump_to_string(kp, buffer, &sz);
     if (eno != KOOPA_EC_SUCCESS)
     {
-        std::cout << "dump llvm to string error: " << (int)eno << std::endl;
+        std::cout << "dump to string error: " << (int)eno << std::endl;
         return 0;
     }
     std::cout << buffer << std::endl;
