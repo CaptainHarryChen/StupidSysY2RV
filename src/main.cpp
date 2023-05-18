@@ -1,12 +1,13 @@
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <memory>
 #include <string>
-#include <assert.h>
 
 #include "ast.hpp"
+#include "koopa_riscv.hpp"
 
 // 声明 lexer 的输入, 以及 parser 函数
 extern FILE *yyin;
@@ -31,30 +32,41 @@ int main(int argc, const char *argv[])
     auto ret = yyparse(ast);
     assert(!ret);
 
-    // 输出解析得到的 AST, 其实就是个字符串
-    std::cout << ast->to_string() << std::endl;
+    // 输出解析得到的 AST
+    std::cout << "AST:" << std::endl << ast->to_string() << std::endl;
 
     std::unique_ptr<CompUnitAST> comp_ast(dynamic_cast<CompUnitAST *>(ast.release()));
-    koopa_raw_program_t res = comp_ast->to_koopa_raw_program();
-
-    koopa_program_t kp;
-    koopa_error_code_t eno = koopa_generate_raw_to_koopa(&res, &kp);
-    if (eno != KOOPA_EC_SUCCESS)
+    koopa_raw_program_t krp = comp_ast->to_koopa_raw_program();
+    
+    if(strcmp(mode, "-koopa") == 0)
     {
-        std::cout << "generate raw to koopa error: " << (int)eno << std::endl;
-        return 0;
+        std::cout << "generate koopa file..." << std::endl;
+        koopa_program_t kp;
+        koopa_error_code_t eno = koopa_generate_raw_to_koopa(&krp, &kp);
+        if (eno != KOOPA_EC_SUCCESS)
+        {
+            std::cout << "generate raw to koopa error: " << (int)eno << std::endl;
+            return 0;
+        }
+        char *buffer = new char[1000];
+        size_t sz = 1000u;
+        eno = koopa_dump_to_string(kp, buffer, &sz);
+        if (eno != KOOPA_EC_SUCCESS)
+        {
+            std::cout << "koopa dump to string error: " << (int)eno << std::endl;
+            return 0;
+        }
+        koopa_dump_to_file(kp, output);
     }
-    char *buffer = new char[1000];
-    size_t sz = 1000u;
-    eno = koopa_dump_to_string(kp, buffer, &sz);
-    if (eno != KOOPA_EC_SUCCESS)
+    else if(strcmp(mode, "-riscv") == 0)
     {
-        std::cout << "dump to string error: " << (int)eno << std::endl;
-        return 0;
+        std::cout << "generate riscv file..." << std::endl;
+        std::string str_riscv = gen_riscv_from_koopa_raw_program(&krp);
+        // std::cout << "riscv:" << std::endl << std::endl << str_riscv;
+        std::ofstream out(output);
+        out << str_riscv;
+        out.close();
     }
-    std::cout << buffer << std::endl;
-    std::ofstream yyout(output);
-    yyout << buffer;
 
     return 0;
 }
