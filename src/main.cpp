@@ -40,7 +40,6 @@ int main(int argc, const char *argv[])
     // std::cout << "AST:" << std::endl << ast->to_string() << std::endl;
 
     std::unique_ptr<CompUnitAST> comp_ast(dynamic_cast<CompUnitAST *>(ast.release()));
-    comp_ast->pass_property(nullptr);
     koopa_raw_program_t krp = comp_ast->to_koopa_raw_program();
     
     if(strcmp(mode, "-koopa") == 0)

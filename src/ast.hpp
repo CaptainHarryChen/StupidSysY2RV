@@ -25,7 +25,6 @@ class BaseAST
 {
 public:
     virtual ~BaseAST() = default;
-    virtual void pass_property(void *pro) = 0;
     virtual std::string to_string() const
     {
         return "(Not Implement)";
@@ -54,11 +53,6 @@ public:
     CompUnitAST(std::unique_ptr<BaseAST> &_func_def)
     {
         func_def = std::move(_func_def);
-    }
-
-    void pass_property(void *pro) override
-    {
-        func_def->pass_property(nullptr);
     }
 
     std::string to_string() const override
@@ -97,12 +91,6 @@ public:
     {
         func_type = std::move(_func_type);
         block = std::move(_block);
-    }
-
-    void pass_property(void * pro) override
-    {
-        func_type->pass_property(nullptr);
-        block->pass_property(nullptr);
     }
 
     std::string to_string() const override
@@ -145,8 +133,6 @@ public:
         return "FuncTypeAST { " + name + " }";
     }
 
-    void pass_property(void *pro) override {}
-
     void *to_koopa_item(koopa_raw_slice_t parent) const override
     {
         if (name == "int")
@@ -163,11 +149,6 @@ public:
     BlockAST(std::unique_ptr<BaseAST> &_stmt)
     {
         stmt = std::move(_stmt);
-    }
-
-    void pass_property(void *pro) override
-    {
-        stmt->pass_property(nullptr);
     }
 
     std::string to_string() const override
@@ -198,7 +179,6 @@ public:
     {
         ret_num = std::move(_ret_num);
     }
-    void pass_property(void *pro) override {}
     std::string to_string() const override
     {
         return "StmtAST { return, " + ret_num->to_string() + " }";
@@ -227,12 +207,6 @@ public:
         unaryExp = std::move(_unaryExp);
     }
 
-    void pass_property(void *pro) override
-    {
-        std::shared_ptr<BaseAST> lastExp = nullptr;
-        unaryExp->pass_property(&lastExp);
-    }
-
     void *build_koopa_values(std::vector<const void*> &buf, koopa_raw_slice_t parent) const override
     {
         return unaryExp->build_koopa_values(buf, parent);
@@ -244,7 +218,6 @@ class NumberAST : public BaseAST
 public:
     int val;
     NumberAST(int _val)  {val = _val;}
-    void pass_property(void *pro) override {}
     std::string to_string() const override
     {
         return "NumberAST { int " + std::to_string(val) + " }";
@@ -272,12 +245,6 @@ class PrimaryExpAST : public BaseAST
 {
 public:
     std::unique_ptr<BaseAST> nextExp; // Exp or Number
-
-    void pass_property(void *pro) override
-    {
-        nextExp->pass_property(nullptr);
-    }
-
     PrimaryExpAST(std::unique_ptr<BaseAST> &_nextExp)
     {
         nextExp = std::move(_nextExp);
@@ -297,7 +264,6 @@ public:
         Op
     } type;
     std::string op;
-    std::shared_ptr<BaseAST> lastExp;
     std::unique_ptr<BaseAST> nextExp; // PrimaryExp or UnaryExp
 
     UnaryExpAST(std::unique_ptr<BaseAST> &_primary_exp)
@@ -310,12 +276,6 @@ public:
         type = Op;
         op = std::string(_op);
         nextExp = std::move(_unary_exp);
-    }
-
-    void pass_property(void *pro) override
-    {
-        lastExp = *(std::shared_ptr<BaseAST>*)pro;
-        nextExp->pass_property(nullptr);
     }
     
     void *build_koopa_values(std::vector<const void*> &buf, koopa_raw_slice_t parent) const override
@@ -336,26 +296,123 @@ public:
             res->kind.tag = KOOPA_RVT_BINARY;
             auto &binary = res->kind.data.binary;
             if(op == "+")
-            {
                 binary.op = KOOPA_RBO_ADD;
-                binary.lhs = lastExp ? (koopa_raw_value_t)lastExp->build_koopa_values(buf, child_used_by) 
-                        : (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-                binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(buf, child_used_by);
-            }
             else if(op == "-")
-            {
                 binary.op = KOOPA_RBO_SUB;
-                binary.lhs = lastExp ? (koopa_raw_value_t)lastExp->build_koopa_values(buf, child_used_by) 
-                        : (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-                binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(buf, child_used_by);
-            }
             else if(op == "!")
-            {
                 binary.op = KOOPA_RBO_EQ;
-                binary.lhs = lastExp ? (koopa_raw_value_t)lastExp->build_koopa_values(buf, child_used_by) 
-                        : (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-                binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(buf, child_used_by);
-            }
+            binary.lhs = (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
+            binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(buf, child_used_by);
+            buf.push_back(res);
+            break;
+        }
+        return res;
+    }
+};
+
+class MulExpAST : public BaseAST
+{
+public:
+    enum
+    {
+        Primary,
+        Op
+    } type;
+    std::string op;
+    std::unique_ptr<BaseAST> leftExp; // may be primary
+    std::unique_ptr<BaseAST> rightExp;
+
+    MulExpAST(std::unique_ptr<BaseAST> &_primary_exp)
+    {
+        type = Primary;
+        leftExp = std::move(_primary_exp);
+    }
+    MulExpAST(std::unique_ptr<BaseAST> &_left_exp, const char *_op, std::unique_ptr<BaseAST> &_right_exp)
+    {
+        type = Op;
+        leftExp = std::move(_left_exp);
+        op = std::string(_op);
+        rightExp = std::move(_right_exp);
+    }
+    
+    void *build_koopa_values(std::vector<const void*> &buf, koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = nullptr;
+        switch(type)
+        {
+        case Primary:
+            res = (koopa_raw_value_data*)leftExp->build_koopa_values(buf, parent);
+            break;
+        case Op:
+            res = new koopa_raw_value_data();
+            koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+            res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+            res->name = nullptr;
+            res->used_by = parent;
+            res->kind.tag = KOOPA_RVT_BINARY;
+            auto &binary = res->kind.data.binary;
+            if(op == "*")
+                binary.op = KOOPA_RBO_MUL;
+            else if(op == "/")
+                binary.op = KOOPA_RBO_DIV;
+            else if(op == "%")
+                binary.op = KOOPA_RBO_MOD;
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
+            buf.push_back(res);
+            break;
+        }
+        return res;
+    }
+};
+
+class AddExpAST : public BaseAST
+{
+public:
+    enum
+    {
+        Primary,
+        Op
+    } type;
+    std::string op;
+    std::unique_ptr<BaseAST> leftExp; // may be primary
+    std::unique_ptr<BaseAST> rightExp;
+
+    AddExpAST(std::unique_ptr<BaseAST> &_primary_exp)
+    {
+        type = Primary;
+        leftExp = std::move(_primary_exp);
+    }
+    AddExpAST(std::unique_ptr<BaseAST> &_left_exp, const char *_op, std::unique_ptr<BaseAST> &_right_exp)
+    {
+        type = Op;
+        leftExp = std::move(_left_exp);
+        op = std::string(_op);
+        rightExp = std::move(_right_exp);
+    }
+    
+    void *build_koopa_values(std::vector<const void*> &buf, koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = nullptr;
+        switch(type)
+        {
+        case Primary:
+            res = (koopa_raw_value_data*)leftExp->build_koopa_values(buf, parent);
+            break;
+        case Op:
+            res = new koopa_raw_value_data();
+            koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+            res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+            res->name = nullptr;
+            res->used_by = parent;
+            res->kind.tag = KOOPA_RVT_BINARY;
+            auto &binary = res->kind.data.binary;
+            if(op == "+")
+                binary.op = KOOPA_RBO_ADD;
+            else if(op == "-")
+                binary.op = KOOPA_RBO_SUB;
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
             buf.push_back(res);
             break;
         }
