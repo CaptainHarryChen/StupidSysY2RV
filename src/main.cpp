@@ -30,12 +30,17 @@ int main(int argc, const char *argv[])
     // 调用 parser 函数, parser 函数会进一步调用 lexer 解析输入文件的
     std::unique_ptr<BaseAST> ast;
     auto ret = yyparse(ast);
-    assert(!ret);
+    if(ret)
+    {
+        std::cout << "yyparse error: " << ret << std::endl;
+        assert(!ret);
+    }
 
     // 输出解析得到的 AST
-    std::cout << "AST:" << std::endl << ast->to_string() << std::endl;
+    // std::cout << "AST:" << std::endl << ast->to_string() << std::endl;
 
     std::unique_ptr<CompUnitAST> comp_ast(dynamic_cast<CompUnitAST *>(ast.release()));
+    comp_ast->pass_property(nullptr);
     koopa_raw_program_t krp = comp_ast->to_koopa_raw_program();
     
     if(strcmp(mode, "-koopa") == 0)
