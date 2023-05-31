@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-#include "ast.hpp"
+#include "ast/ast.hpp"
 #include "koopa_riscv.hpp"
 
 // 声明 lexer 的输入, 以及 parser 函数
