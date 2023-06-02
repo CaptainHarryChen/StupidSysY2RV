@@ -1,6 +1,16 @@
 #pragma once
 
+#include <map>
+
 #include "ast/base_ast.hpp"
+#include "koopa_util.hpp"
+
+enum InstType
+{
+    ConstDecl,
+    Decl,
+    Stmt
+};
 
 // CompUnit 是 BaseAST
 class CompUnitAST : public BaseAST
@@ -103,29 +113,44 @@ public:
 class BlockAST : public BaseAST
 {
 public:
-    std::unique_ptr<BaseAST> stmt;
+    std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> insts;
 
-    BlockAST(std::unique_ptr<BaseAST> &_stmt)
+    BlockAST() {}
+    BlockAST(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> &_insts)
     {
-        stmt = std::move(_stmt);
-    }
-
-    std::string to_string() const override
-    {
-        return "BlockAST { " + stmt->to_string() + " }";
+        for(auto &inst : _insts)
+            insts.push_back(make_pair(inst.first, std::move(inst.second)));
     }
 
     void *to_koopa_item(koopa_raw_slice_t parent) const override
     {
+        symbol_list.NewEnv();
         koopa_raw_basic_block_data_t *res = new koopa_raw_basic_block_data_t();
         res->name = "%entry";
         res->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
 
         std::vector<const void *> stmts;
-        stmt->build_koopa_values(stmts, empty_koopa_rs());
+        for(auto &inst : insts)
+        {
+            switch(inst.first)
+            {
+            case ConstDecl:
+                // TODO: used_by
+                inst.second->to_koopa_item(empty_koopa_rs());
+                break;
+            case Decl:
+                // TODO: used_by
+                inst.second->build_koopa_values(stmts, empty_koopa_rs());
+                break;
+            case Stmt:
+                inst.second->build_koopa_values(stmts, empty_koopa_rs());
+                break;
+            }
+        }
         res->insts = make_koopa_rs_from_vector(stmts, KOOPA_RSIK_VALUE);
 
+        symbol_list.DeleteEnv();
         return res;
     }
 };
@@ -152,6 +177,31 @@ public:
         res->kind.tag = KOOPA_RVT_RETURN;
         res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values(buf, child_used_by);
         buf.push_back(res);
+        return res;
+    }
+};
+
+class ConstDefAST : public BaseAST
+{
+public:
+    std::string name;
+    std::unique_ptr<BaseAST> exp;
+
+    ConstDefAST(const char *_name, std::unique_ptr<BaseAST> &_exp)
+        : name(_name)
+    {
+        exp = std::move(_exp);
+    }
+
+    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+        res->name = nullptr;
+        res->used_by = parent;
+        res->kind.tag = KOOPA_RVT_INTEGER;
+        res->kind.data.integer.value = exp->CalcValue();
+        symbol_list.AddSymbol(name, res);
         return res;
     }
 };

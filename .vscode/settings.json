@@ -46,7 +46,8 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "cstring": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "map": "cpp"
     },
     "cmake.debugConfig": {
         "args":["-koopa", "../test/hello.c", "-o", "../test/hello.koopa"]

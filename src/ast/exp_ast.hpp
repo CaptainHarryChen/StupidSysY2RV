@@ -16,6 +16,11 @@ public:
     {
         return unaryExp->build_koopa_values(buf, parent);
     }
+
+    int CalcValue() const override
+    {
+        return unaryExp->CalcValue();
+    }
 };
 
 class NumberAST : public BaseAST
@@ -44,6 +49,26 @@ public:
         // buf.push_back(res);
         return res;
     }
+    int CalcValue() const override
+    {
+        return val;
+    }
+};
+
+class LValAST : public BaseAST
+{
+public:
+    std::string name;
+    LValAST(const char *_name) : name(_name) {}
+    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    {
+        return symbol_list.GetSymbol(name);
+    }
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    {
+        auto res = to_koopa_item(parent);
+        return res;
+    }
 };
 
 class PrimaryExpAST : public BaseAST
@@ -57,6 +82,10 @@ public:
     void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
     {
         return nextExp->build_koopa_values(buf, parent);
+    }
+    int CalcValue() const override
+    {
+        return nextExp->CalcValue();
     }
 };
 
@@ -111,6 +140,19 @@ public:
             buf.push_back(res);
             break;
         }
+        return res;
+    }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return nextExp->CalcValue();
+        int res = 0;
+        if (op == "+")
+            res = nextExp->CalcValue();
+        else if (op == "-")
+            res = -nextExp->CalcValue();
+        else if (op == "!")
+            res = !nextExp->CalcValue();
         return res;
     }
 };
@@ -169,6 +211,19 @@ public:
         }
         return res;
     }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "*")
+            res = leftExp->CalcValue() * rightExp->CalcValue();
+        else if (op == "/")
+            res = leftExp->CalcValue() / rightExp->CalcValue();
+        else if (op == "%")
+            res = leftExp->CalcValue() % rightExp->CalcValue();
+        return res;
+    }
 };
 
 class AddExpAST : public BaseAST
@@ -221,6 +276,17 @@ public:
             buf.push_back(res);
             break;
         }
+        return res;
+    }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "+")
+            res = leftExp->CalcValue() + rightExp->CalcValue();
+        else if (op == "-")
+            res = leftExp->CalcValue() - rightExp->CalcValue();
         return res;
     }
 };
@@ -281,6 +347,21 @@ public:
         }
         return res;
     }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "<")
+            res = leftExp->CalcValue() < rightExp->CalcValue();
+        else if (op == "<=")
+            res = leftExp->CalcValue() <= rightExp->CalcValue();
+        else if (op == ">")
+            res = leftExp->CalcValue() > rightExp->CalcValue();
+        else if (op == ">=")
+            res = leftExp->CalcValue() >= rightExp->CalcValue();
+        return res;
+    }
 };
 
 class EqExpAST : public BaseAST
@@ -333,6 +414,17 @@ public:
             buf.push_back(res);
             break;
         }
+        return res;
+    }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "==")
+            res = leftExp->CalcValue() == rightExp->CalcValue();
+        else if (op == "!=")
+            res = leftExp->CalcValue() != rightExp->CalcValue();
         return res;
     }
 };
@@ -405,6 +497,15 @@ public:
         }
         return res;
     }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "&&")
+            res = leftExp->CalcValue() && rightExp->CalcValue();
+        return res;
+    }
 };
 
 class LOrExpAST : public BaseAST
@@ -473,6 +574,15 @@ public:
             buf.push_back(res);
             break;
         }
+        return res;
+    }
+    int CalcValue() const override
+    {
+        if(type == Primary)
+            return leftExp->CalcValue();
+        int res = 0;
+        if (op == "||")
+            res = leftExp->CalcValue() || rightExp->CalcValue();
         return res;
     }
 };

@@ -9,7 +9,18 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
+#include <map>
 #include "ast/ast.hpp"
+
+
+std::vector<std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>>> env_stk;
+
+void add_inst(InstType instType, BaseAST *ast)
+{
+    env_stk[env_stk.size()-1].push_back(make_pair(instType, std::unique_ptr<BaseAST>(ast)));
+}
+
 
 // 声明 lexer 函数和错误处理函数
 int yylex();
@@ -31,12 +42,14 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
-%token INT RETURN
+%token INT RETURN CONST
 %token <str_val> IDENT UNARYOP MULOP ADDOP RELOP EQOP LANDOP LOROP
 %token <int_val> INT_CONST
 
 // 非终结符的类型定义
-%type <base_ast_val> FuncDef FuncType Block Stmt Exp PrimaryExp UnaryExp MulExp AddExp RelExp EqExp LAndExp LOrExp Number
+%type <base_ast_val> FuncDef FuncType Block
+%type <base_ast_val> LVal Number
+%type <base_ast_val> Exp PrimaryExp UnaryExp MulExp AddExp RelExp EqExp LAndExp LOrExp
 
 %%
 
@@ -66,19 +79,39 @@ FuncType
     }
     ;
 
-Block
-    : '{' Stmt '}' {
-        auto stmt = std::unique_ptr<BaseAST>($2);
-        $$ = new BlockAST(stmt);
+Block :
+    {
+        env_stk.push_back(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>>());
     }
-    ;
+    '{' BlockItems '}' {
+        $$ = new BlockAST(env_stk[env_stk.size()-1]);
+        env_stk.pop_back();
+    };
+
+BlockItems : BlockItem | BlockItem BlockItems ;
+
+BlockItem : Decl | Stmt ;
 
 Stmt
     : RETURN Exp ';' {
         auto number = std::unique_ptr<BaseAST>($2);
-        $$ = new StmtAST(number);
-    }
-    ;
+        add_inst(InstType::Stmt, new StmtAST(number));
+    };
+
+Decl : ConstDecl;
+
+ConstDecl : CONST INT ConstDefList ';';
+ConstDefList  : ConstDef | ConstDefList ',' ConstDef
+ConstDef
+    : IDENT '=' Exp {
+        auto exp = std::unique_ptr<BaseAST>($3);
+        add_inst(InstType::ConstDecl, new ConstDefAST($1->c_str(), exp));
+    };
+
+LVal
+    : IDENT {
+        $$ = new LValAST($1->c_str());
+    };
 
 Exp 
     : LOrExp {
@@ -96,7 +129,11 @@ PrimaryExp
         auto number = std::unique_ptr<BaseAST>($1);
         $$ = new PrimaryExpAST(number);
     }
-    ;
+    | LVal {
+        auto lval = std::unique_ptr<BaseAST>($1);
+        $$ = new PrimaryExpAST(lval);
+    };
+
 UnaryExp
     : PrimaryExp {
         auto primary_exp = std::unique_ptr<BaseAST>($1);
