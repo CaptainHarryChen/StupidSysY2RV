@@ -95,7 +95,11 @@ BlockItem : Decl | Stmt ;
 Stmt
     : RETURN Exp ';' {
         auto number = std::unique_ptr<BaseAST>($2);
-        add_inst(InstType::Stmt, new StmtAST(number));
+        add_inst(InstType::Stmt, new ReturnAST(number));
+    } | LVal '=' Exp ';' {
+        auto lval = std::unique_ptr<BaseAST>($1);
+        auto exp = std::unique_ptr<BaseAST>($3);
+        add_inst(InstType::Stmt, new AssignmentAST(lval, exp));
     };
 
 Decl : ConstDecl | VarDecl;

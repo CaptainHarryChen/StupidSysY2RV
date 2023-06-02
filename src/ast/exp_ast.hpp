@@ -29,13 +29,20 @@ public:
     std::string name;
     LValAST(const char *_name) : name(_name) {}
 
+    // 将变量作为左值返回（返回该左值的变量本身）
+    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    {
+        return (void *)symbol_list.GetSymbol(name).number;
+    }
+
+    // 将变量作为右值返回（读取变量里存储的值）
     void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
     {
-        koopa_raw_value_data *res = new koopa_raw_value_data(); 
+        koopa_raw_value_data *res = new koopa_raw_value_data();
         auto var = symbol_list.GetSymbol(name);
-        if(var.type == LValSymbol::Const)
-            return (void*)var.number;
-        else if(var.type == LValSymbol::Var)
+        if (var.type == LValSymbol::Const)
+            return (void *)var.number;
+        else if (var.type == LValSymbol::Var)
         {
             res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
             res->name = nullptr;
@@ -45,6 +52,13 @@ public:
             buf.push_back(res);
         }
         return res;
+    }
+
+    int CalcValue() const override
+    {
+        auto var = symbol_list.GetSymbol(name);
+        assert(var.type == LValSymbol::Const);
+        return var.number->kind.data.integer.value;
     }
 };
 
@@ -99,6 +113,11 @@ public:
             res = (koopa_raw_value_data *)nextExp->build_koopa_values(buf, parent);
             break;
         case Op:
+            if (op == "+")
+            {
+                res = (koopa_raw_value_data *)nextExp->build_koopa_values(buf, parent);
+                break;
+            }
             res = new koopa_raw_value_data();
             koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
             res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
@@ -106,9 +125,7 @@ public:
             res->used_by = parent;
             res->kind.tag = KOOPA_RVT_BINARY;
             auto &binary = res->kind.data.binary;
-            if (op == "+")
-                binary.op = KOOPA_RBO_ADD;
-            else if (op == "-")
+            if (op == "-")
                 binary.op = KOOPA_RBO_SUB;
             else if (op == "!")
                 binary.op = KOOPA_RBO_EQ;
@@ -121,7 +138,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return nextExp->CalcValue();
         int res = 0;
         if (op == "+")
@@ -190,7 +207,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "*")
@@ -257,7 +274,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "+")
@@ -326,7 +343,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "<")
@@ -395,7 +412,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "==")
@@ -476,7 +493,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "&&")
@@ -555,7 +572,7 @@ public:
     }
     int CalcValue() const override
     {
-        if(type == Primary)
+        if (type == Primary)
             return leftExp->CalcValue();
         int res = 0;
         if (op == "||")

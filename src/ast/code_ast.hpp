@@ -155,17 +155,13 @@ public:
     }
 };
 
-class StmtAST : public BaseAST
+class ReturnAST : public BaseAST
 {
 public:
     std::unique_ptr<BaseAST> ret_num;
-    StmtAST(std::unique_ptr<BaseAST> &_ret_num)
+    ReturnAST(std::unique_ptr<BaseAST> &_ret_num)
     {
         ret_num = std::move(_ret_num);
-    }
-    std::string to_string() const override
-    {
-        return "StmtAST { return, " + ret_num->to_string() + " }";
     }
     void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
     {
@@ -178,6 +174,30 @@ public:
         res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values(buf, child_used_by);
         buf.push_back(res);
         return res;
+    }
+};
+
+class AssignmentAST : public BaseAST
+{
+public:
+    std::unique_ptr<BaseAST> lval;
+    std::unique_ptr<BaseAST> exp;
+    AssignmentAST(std::unique_ptr<BaseAST> &_lval, std::unique_ptr<BaseAST> &_exp)
+    {
+        lval = std::move(_lval);
+        exp = std::move(_exp);
+    }
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+        res->name = nullptr;
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        res->kind.tag = KOOPA_RVT_STORE;
+        res->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
+        res->kind.data.store.dest = (koopa_raw_value_t)lval->to_koopa_item(child_used_by);
+        buf.push_back(res);
+        return nullptr;
     }
 };
 
@@ -237,19 +257,16 @@ public:
         buf.push_back(res);
         symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Var, res));
 
-        koopa_raw_value_data *store = new koopa_raw_value_data();
-        store->name = nullptr;
-        store->used_by = empty_koopa_rs();
-        store->kind.tag = KOOPA_RVT_STORE;
-        store->kind.data.store.dest = res;
         if(exp)
-            store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
-        else
         {
-            NumberAST zero(0);
-            store->kind.data.store.value = (koopa_raw_value_t)zero.to_koopa_item(child_used_by);
+            koopa_raw_value_data *store = new koopa_raw_value_data();
+            store->name = nullptr;
+            store->used_by = empty_koopa_rs();
+            store->kind.tag = KOOPA_RVT_STORE;
+            store->kind.data.store.dest = res;
+            store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
+            buf.push_back(store);
         }
-        buf.push_back(store);
         
         return res;
     }
