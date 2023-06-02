@@ -98,14 +98,25 @@ Stmt
         add_inst(InstType::Stmt, new StmtAST(number));
     };
 
-Decl : ConstDecl;
+Decl : ConstDecl | VarDecl;
 
 ConstDecl : CONST INT ConstDefList ';';
-ConstDefList  : ConstDef | ConstDefList ',' ConstDef
+ConstDefList : ConstDef | ConstDefList ',' ConstDef
 ConstDef
     : IDENT '=' Exp {
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::ConstDecl, new ConstDefAST($1->c_str(), exp));
+    };
+
+VarDecl : INT VarDefList ';';
+VarDefList : VarDef | VarDefList ',' VarDef
+VarDef
+    : IDENT {
+        add_inst(InstType::Decl, new VarDefAST($1->c_str()));
+    }
+    | IDENT '=' Exp {
+        auto exp = std::unique_ptr<BaseAST>($3);
+        add_inst(InstType::Decl, new VarDefAST($1->c_str(), exp));
     };
 
 LVal

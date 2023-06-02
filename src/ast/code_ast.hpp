@@ -201,7 +201,56 @@ public:
         res->used_by = parent;
         res->kind.tag = KOOPA_RVT_INTEGER;
         res->kind.data.integer.value = exp->CalcValue();
-        symbol_list.AddSymbol(name, res);
+        symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Const, res));
+        return res;
+    }
+};
+
+class VarDefAST : public BaseAST
+{
+public:
+    std::string name;
+    std::unique_ptr<BaseAST> exp;
+
+    VarDefAST(const char *_name)
+        : name(_name)
+    {
+        exp = nullptr;
+    }
+
+    VarDefAST(const char *_name, std::unique_ptr<BaseAST> &_exp)
+        : name(_name)
+    {
+        exp = std::move(_exp);
+    }
+
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+        res->ty = make_int_pointer_type();
+        char *tname = new char(name.length() + 1);
+        ("@" + name).copy(tname, sizeof(tname));
+        res->name = tname;
+        res->used_by = parent;
+        res->kind.tag = KOOPA_RVT_ALLOC;
+        buf.push_back(res);
+        symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Var, res));
+
+        koopa_raw_value_data *store = new koopa_raw_value_data();
+        store->name = nullptr;
+        store->used_by = empty_koopa_rs();
+        store->kind.tag = KOOPA_RVT_STORE;
+        store->kind.data.store.dest = res;
+        if(exp)
+            store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
+        else
+        {
+            NumberAST zero(0);
+            store->kind.data.store.value = (koopa_raw_value_t)zero.to_koopa_item(child_used_by);
+        }
+        buf.push_back(store);
+        
         return res;
     }
 };

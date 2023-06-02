@@ -5,23 +5,34 @@
 
 class BaseAST;
 
+struct LValSymbol
+{
+    enum SymbolType{
+        Const,
+        Var
+    } type;
+    koopa_raw_value_t number;
+    LValSymbol(){}
+    LValSymbol(SymbolType _type, koopa_raw_value_t _number): type(_type), number(_number){}
+};
+
 class SymbolList
 {
-    std::vector<std::map<std::string, void*>> sym_stk;
+    std::vector<std::map<std::string, LValSymbol>> sym_stk;
 
 public:
     void NewEnv()
     {
-        sym_stk.push_back(std::map<std::string, void*>());
+        sym_stk.push_back(std::map<std::string, LValSymbol>());
     }
-    void AddSymbol(const std::string &name, void *koopa_item)
+    void AddSymbol(const std::string &name, LValSymbol koopa_item)
     {
         auto &list = sym_stk[sym_stk.size()-1];
         list[name] = koopa_item;
     }
-    void * GetSymbol(const std::string &name)
+    LValSymbol GetSymbol(const std::string &name)
     {
-        void *res = nullptr;
+        LValSymbol res;
         for(size_t i = sym_stk.size()-1; i>=0; i--)
             if(sym_stk[i].count(name) != 0)
             {

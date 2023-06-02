@@ -52,3 +52,11 @@ koopa_raw_type_kind *simple_koopa_raw_type_kind(koopa_raw_type_tag_t tag)
     res->tag = tag;
     return res;
 }
+
+koopa_raw_type_kind* make_int_pointer_type()
+{
+    koopa_raw_type_kind *res = new koopa_raw_type_kind();
+    res->tag = KOOPA_RTT_POINTER;
+    res->data.pointer.base = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    return res;
+}
