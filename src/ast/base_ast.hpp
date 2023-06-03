@@ -9,6 +9,8 @@
 #include "koopa_util.hpp"
 #include "symbol_list.hpp"
 
+char *new_char_arr(std::string str);
+
 // 所有 AST 的基类
 class BaseAST
 {

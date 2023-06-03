@@ -80,12 +80,14 @@ FuncType
     ;
 
 Block :
-    {
+    '{' {
         env_stk.push_back(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>>());
     }
-    '{' BlockItems '}' {
+    BlockItems '}' {
         $$ = new BlockAST(env_stk[env_stk.size()-1]);
         env_stk.pop_back();
+    } | '{' '}' {
+        $$ = new BlockAST();
     };
 
 BlockItems : BlockItem | BlockItem BlockItems ;
@@ -100,6 +102,10 @@ Stmt
         auto lval = std::unique_ptr<BaseAST>($1);
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::Stmt, new AssignmentAST(lval, exp));
+    } | ';' | Exp ';' {
+        add_inst(InstType::Stmt, $1);
+    } | Block {
+        add_inst(InstType::Stmt, $1);
     };
 
 Decl : ConstDecl | VarDecl;

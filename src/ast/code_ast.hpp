@@ -76,15 +76,22 @@ public:
         ty->data.function.params = empty_koopa_rs(KOOPA_RSIK_TYPE);
         ty->data.function.ret = (const struct koopa_raw_type_kind *)func_type->to_koopa_item(empty_koopa_rs());
         res->ty = ty;
-
-        char *tname = new char(ident.length() + 1);
-        ("@" + ident).copy(tname, sizeof(tname));
-        res->name = tname;
-
+        res->name = new_char_arr("@" + ident);
         res->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
 
         std::vector<const void *> blocks;
-        blocks.push_back(block->to_koopa_item(empty_koopa_rs()));
+        symbol_list.SetBasicBlockBuf(&blocks);
+
+        koopa_raw_basic_block_data_t *entry_block = new koopa_raw_basic_block_data_t();
+        entry_block->name = new_char_arr("%entry_" + ident);
+        entry_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        entry_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+
+        symbol_list.AddNewBasicBlock(entry_block);
+        std::vector<const void *> entry_insts;
+        block->build_koopa_values(entry_insts, empty_koopa_rs());
+        entry_block->insts = make_koopa_rs_from_vector(entry_insts, KOOPA_RSIK_VALUE);
+
         res->bbs = make_koopa_rs_from_vector(blocks, KOOPA_RSIK_BASIC_BLOCK);
 
         return res;
@@ -110,6 +117,7 @@ public:
     }
 };
 
+// AST code block, enclosed in '{}'. Different from koopa basic block
 class BlockAST : public BaseAST
 {
 public:
@@ -118,22 +126,16 @@ public:
     BlockAST() {}
     BlockAST(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> &_insts)
     {
-        for(auto &inst : _insts)
+        for (auto &inst : _insts)
             insts.push_back(make_pair(inst.first, std::move(inst.second)));
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
     {
         symbol_list.NewEnv();
-        koopa_raw_basic_block_data_t *res = new koopa_raw_basic_block_data_t();
-        res->name = "%entry";
-        res->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
-        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
-
-        std::vector<const void *> stmts;
-        for(auto &inst : insts)
+        for (auto &inst : insts)
         {
-            switch(inst.first)
+            switch (inst.first)
             {
             case ConstDecl:
                 // TODO: used_by
@@ -141,17 +143,15 @@ public:
                 break;
             case Decl:
                 // TODO: used_by
-                inst.second->build_koopa_values(stmts, empty_koopa_rs());
+                inst.second->build_koopa_values(buf, empty_koopa_rs());
                 break;
             case Stmt:
-                inst.second->build_koopa_values(stmts, empty_koopa_rs());
+                inst.second->build_koopa_values(buf, empty_koopa_rs());
                 break;
             }
         }
-        res->insts = make_koopa_rs_from_vector(stmts, KOOPA_RSIK_VALUE);
-
         symbol_list.DeleteEnv();
-        return res;
+        return nullptr;
     }
 };
 
@@ -250,15 +250,13 @@ public:
         koopa_raw_value_data *res = new koopa_raw_value_data();
         koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
         res->ty = make_int_pointer_type();
-        char *tname = new char(name.length() + 1);
-        ("@" + name).copy(tname, sizeof(tname));
-        res->name = tname;
+        res->name = new_char_arr("@" + name);
         res->used_by = parent;
         res->kind.tag = KOOPA_RVT_ALLOC;
         buf.push_back(res);
         symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Var, res));
 
-        if(exp)
+        if (exp)
         {
             koopa_raw_value_data *store = new koopa_raw_value_data();
             store->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
@@ -269,7 +267,7 @@ public:
             store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
             buf.push_back(store);
         }
-        
+
         return res;
     }
 };

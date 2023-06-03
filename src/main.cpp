@@ -52,8 +52,8 @@ int main(int argc, const char *argv[])
             std::cout << "generate raw to koopa error: " << (int)eno << std::endl;
             return 0;
         }
-        char *buffer = new char[1000];
-        size_t sz = 1000u;
+        char *buffer = new char[1000000];
+        size_t sz = 1000000u;
         eno = koopa_dump_to_string(kp, buffer, &sz);
         if (eno != KOOPA_EC_SUCCESS)
         {
