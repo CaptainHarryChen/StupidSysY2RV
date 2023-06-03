@@ -50,6 +50,7 @@
         "map": "cpp"
     },
     "cmake.debugConfig": {
-        "args":["-koopa", "../test/hello.c", "-o", "../test/hello.koopa"]
+        //"args":["-koopa", "../test/hello.c", "-o", "../test/hello.koopa"]
+        "args":["-riscv", "../test/hello.c", "-o", "../test/hello.s"]
     }
 }

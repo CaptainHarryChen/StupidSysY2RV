@@ -191,6 +191,7 @@ public:
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
         koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+        res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
         res->name = nullptr;
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_STORE;
@@ -260,6 +261,7 @@ public:
         if(exp)
         {
             koopa_raw_value_data *store = new koopa_raw_value_data();
+            store->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
             store->name = nullptr;
             store->used_by = empty_koopa_rs();
             store->kind.tag = KOOPA_RVT_STORE;

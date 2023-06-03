@@ -7,7 +7,7 @@
 #include <string>
 
 #include "ast/ast.hpp"
-#include "koopa_riscv.hpp"
+#include "builder/riscv_builder.hpp"
 
 // 声明 lexer 的输入, 以及 parser 函数
 extern FILE *yyin;
@@ -65,10 +65,10 @@ int main(int argc, const char *argv[])
     else if(strcmp(mode, "-riscv") == 0)
     {
         std::cout << "generate riscv file..." << std::endl;
-        std::string str_riscv = gen_riscv_from_koopa_raw_program(&krp);
-        // std::cout << "riscv:" << std::endl << std::endl << str_riscv;
         std::ofstream out(output);
-        out << str_riscv;
+        //RISCVBuilder builder(std::cout);
+        RISCVBuilder builder(out);
+        builder.build(&krp);
         out.close();
     }
 
