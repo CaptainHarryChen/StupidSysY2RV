@@ -9,8 +9,10 @@ enum InstType
 {
     ConstDecl,
     Decl,
-    Stmt
+    Stmt,
+    Branch
 };
+typedef std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> InstSet;
 
 // CompUnit 是 BaseAST
 class CompUnitAST : public BaseAST
@@ -121,19 +123,21 @@ public:
 class BlockAST : public BaseAST
 {
 public:
-    std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> insts;
+    InstSet insts;
 
     BlockAST() {}
-    BlockAST(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> &_insts)
+    BlockAST(InstSet &_insts)
     {
         for (auto &inst : _insts)
-            insts.push_back(make_pair(inst.first, std::move(inst.second)));
+            insts.push_back(std::make_pair(inst.first, std::move(inst.second)));
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    static void add_InstSet(std::vector<const void *> &buf, const InstSet &insts)
     {
+        // TODO: 处理endblock
+        koopa_raw_basic_block_data_t *end_block = nullptr;
         symbol_list.NewEnv();
-        for (auto &inst : insts)
+        for (const auto &inst : insts)
         {
             switch (inst.first)
             {
@@ -148,9 +152,17 @@ public:
             case Stmt:
                 inst.second->build_koopa_values(buf, empty_koopa_rs());
                 break;
+            case Branch:
+                end_block = (koopa_raw_basic_block_data_t *)inst.second->build_koopa_values(buf, empty_koopa_rs());
+                break;
             }
         }
         symbol_list.DeleteEnv();
+    }
+
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    {
+        add_InstSet(buf, insts);
         return nullptr;
     }
 };
@@ -199,6 +211,71 @@ public:
         res->kind.data.store.dest = (koopa_raw_value_t)lval->to_koopa_item(child_used_by);
         buf.push_back(res);
         return nullptr;
+    }
+};
+
+class BranchAST : public BaseAST
+{
+public:
+    std::unique_ptr<BaseAST> exp;
+    InstSet true_instset;
+    InstSet false_instset;
+    BranchAST(std::unique_ptr<BaseAST> &_exp, InstSet &_true_insts)
+    {
+        for (auto &inst : _true_insts)
+            true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+        exp = std::move(_exp);
+    }
+    BranchAST(std::unique_ptr<BaseAST> &_exp, InstSet &_true_insts, InstSet &_false_insts)
+    {
+        for (auto &inst : _true_insts)
+            true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+        for (auto &inst : _false_insts)
+            false_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+        exp = std::move(_exp);
+    }
+    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
+        res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
+        res->name = nullptr;
+        res->used_by = parent;
+        res->kind.tag = KOOPA_RVT_BRANCH;
+        res->kind.data.branch.cond = (koopa_raw_value_t)exp->build_koopa_values(buf, child_used_by);
+
+        koopa_raw_basic_block_data_t *true_block = new koopa_raw_basic_block_data_t();
+        true_block->name = new_char_arr("%true");
+        true_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        true_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        symbol_list.AddNewBasicBlock(true_block);
+        std::vector<const void *> true_insts;
+        BlockAST::add_InstSet(true_insts, this->true_instset);
+        true_block->insts = make_koopa_rs_from_vector(true_insts, KOOPA_RSIK_VALUE);
+        res->kind.data.branch.true_bb = true_block;
+
+        koopa_raw_basic_block_data_t *false_block = new koopa_raw_basic_block_data_t();
+        false_block->name = new_char_arr("%false");
+        false_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        false_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        symbol_list.AddNewBasicBlock(false_block);
+        std::vector<const void *> false_insts;
+        BlockAST::add_InstSet(false_insts, this->false_instset);
+        false_block->insts = make_koopa_rs_from_vector(false_insts, KOOPA_RSIK_VALUE);
+        res->kind.data.branch.false_bb = false_block;
+
+        res->kind.data.branch.true_args = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        res->kind.data.branch.false_args = empty_koopa_rs(KOOPA_RSIK_VALUE);
+
+        koopa_raw_basic_block_data_t *end_block = new koopa_raw_basic_block_data_t();
+        end_block->name = new_char_arr("%end");
+        end_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        end_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+
+        symbol_list.AddNewBasicBlock(end_block);
+
+        buf.push_back(res);
+        return end_block;
     }
 };
 

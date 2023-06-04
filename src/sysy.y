@@ -13,8 +13,7 @@
 #include <map>
 #include "ast/ast.hpp"
 
-
-std::vector<std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>>> env_stk;
+std::vector<InstSet> env_stk;
 
 void add_inst(InstType instType, BaseAST *ast)
 {
@@ -41,8 +40,7 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 }
 
 // lexer 返回的所有 token 种类的声明
-// 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
-%token INT RETURN CONST
+%token INT RETURN CONST IF ELSE
 %token <str_val> IDENT UNARYOP MULOP ADDOP RELOP EQOP LANDOP LOROP
 %token <int_val> INT_CONST
 
@@ -81,7 +79,7 @@ FuncType
 
 Block :
     '{' {
-        env_stk.push_back(std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>>());
+        env_stk.push_back(InstSet());
     }
     BlockItems '}' {
         $$ = new BlockAST(env_stk[env_stk.size()-1]);
@@ -102,7 +100,31 @@ Stmt
         auto lval = std::unique_ptr<BaseAST>($1);
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::Stmt, new AssignmentAST(lval, exp));
-    } | ';' | Exp ';' {
+    } | IF '(' Exp ')' {
+            env_stk.push_back(InstSet());
+        } Stmt {
+            auto exp = std::unique_ptr<BaseAST>($3);
+            InstSet true_instset;
+            for(auto &inst : env_stk[env_stk.size()-1])
+                true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+            env_stk.pop_back();
+            add_inst(InstType::Branch, new BranchAST(exp, true_instset));
+    } | IF '(' Exp ')' {
+            env_stk.push_back(InstSet());
+        } Stmt ELSE {
+            env_stk.push_back(InstSet());
+        } Stmt {
+            auto exp = std::unique_ptr<BaseAST>($3);
+            InstSet true_instset, false_instset;
+            for(auto &inst : env_stk[env_stk.size()-2])
+                true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+            for(auto &inst : env_stk[env_stk.size()-1])
+                false_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+            env_stk.pop_back();
+            env_stk.pop_back();
+            add_inst(InstType::Branch, new BranchAST(exp, true_instset, false_instset));
+    }
+    | ';' | Exp ';' {
         add_inst(InstType::Stmt, $1);
     } | Block {
         add_inst(InstType::Stmt, $1);
