@@ -20,23 +20,27 @@ public:
     static BlockMaintainer block_maintainer;
 
     virtual ~BaseAST() = default;
+    // 调试用字符串
     virtual std::string to_string() const
     {
         return "(Not Implement)";
     }
-    virtual void *to_koopa_item(koopa_raw_slice_t parent) const
-    {
-        std::cerr << "Not Implement to_koopa_item" << std::endl;
-        assert(false);
-        return nullptr;
-    };
-    virtual void *build_koopa_values(koopa_raw_slice_t parent) const
+    // 输出koopa对象，并在全局环境添加各种信息
+    virtual void *build_koopa_values() const
     {
         std::cerr << "Not Implement build_koopa_values" << std::endl;
         assert(false);
         return nullptr;
     }
+    // 用于表达式AST求值
     virtual int CalcValue() const
+    {
+        std::cerr << "Not Implement build_koopa_values" << std::endl;
+        assert(false);
+        return 0;
+    }
+    // 返回该AST的左值（用于变量）
+    virtual void *koopa_leftvalue() const
     {
         std::cerr << "Not Implement build_koopa_values" << std::endl;
         assert(false);
@@ -54,19 +58,14 @@ public:
         return "NumberAST { int " + std::to_string(val) + " }";
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
         res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
         res->name = nullptr;
-        res->used_by = parent;
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_INTEGER;
         res->kind.data.integer.value = val;
-        return res;
-    }
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
-    {
-        auto res = to_koopa_item(parent);
         return res;
     }
     int CalcValue() const override

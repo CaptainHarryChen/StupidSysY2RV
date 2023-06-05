@@ -31,15 +31,10 @@ public:
         return "CompUnitAST { " + func_def->to_string() + " }";
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
-    {
-        return nullptr;
-    }
-
     koopa_raw_program_t to_koopa_raw_program() const
     {
         std::vector<const void *> funcs;
-        funcs.push_back(func_def->to_koopa_item(empty_koopa_rs()));
+        funcs.push_back(func_def->build_koopa_values());
 
         koopa_raw_program_t res;
         res.values = empty_koopa_rs(KOOPA_RSIK_VALUE);
@@ -69,14 +64,14 @@ public:
         return "FuncDefAST { " + func_type->to_string() + ", " + ident + ", " + block->to_string() + " }";
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_function_data_t *res = new koopa_raw_function_data_t();
 
         koopa_raw_type_kind_t *ty = new koopa_raw_type_kind_t();
         ty->tag = KOOPA_RTT_FUNCTION;
         ty->data.function.params = empty_koopa_rs(KOOPA_RSIK_TYPE);
-        ty->data.function.ret = (const struct koopa_raw_type_kind *)func_type->to_koopa_item(empty_koopa_rs());
+        ty->data.function.ret = (const struct koopa_raw_type_kind *)func_type->build_koopa_values();
         res->ty = ty;
         res->name = new_char_arr("@" + ident);
         res->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
@@ -90,7 +85,7 @@ public:
         entry_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
 
         block_maintainer.AddNewBasicBlock(entry_block);
-        block->build_koopa_values(empty_koopa_rs());
+        block->build_koopa_values();
         block_maintainer.FinishCurrentBlock();
 
         res->bbs = make_koopa_rs_from_vector(blocks, KOOPA_RSIK_BASIC_BLOCK);
@@ -110,7 +105,7 @@ public:
         return "FuncTypeAST { " + name + " }";
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         if (name == "int")
             return simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
@@ -135,29 +130,11 @@ public:
     {
         symbol_list.NewEnv();
         for (const auto &inst : insts)
-        {
-            switch (inst.first)
-            {
-            case ConstDecl:
-                // TODO: used_by
-                inst.second->to_koopa_item(empty_koopa_rs());
-                break;
-            case Decl:
-                // TODO: used_by
-                inst.second->build_koopa_values(empty_koopa_rs());
-                break;
-            case Stmt:
-                inst.second->build_koopa_values(empty_koopa_rs());
-                break;
-            case Branch:
-                inst.second->build_koopa_values(empty_koopa_rs());
-                break;
-            }
-        }
+            inst.second->build_koopa_values();
         symbol_list.DeleteEnv();
     }
 
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         add_InstSet(insts);
         return nullptr;
@@ -172,15 +149,14 @@ public:
     {
         ret_num = std::move(_ret_num);
     }
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
-        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
         res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
         res->name = nullptr;
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_RETURN;
-        res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values(child_used_by);
+        res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values();
         block_maintainer.AddInst(res);
         return res;
     }
@@ -196,16 +172,15 @@ public:
         lval = std::move(_lval);
         exp = std::move(_exp);
     }
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
-        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
         res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
         res->name = nullptr;
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_STORE;
-        res->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(child_used_by);
-        res->kind.data.store.dest = (koopa_raw_value_t)lval->to_koopa_item(child_used_by);
+        res->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values();
+        res->kind.data.store.dest = (koopa_raw_value_t)lval->koopa_leftvalue();
         block_maintainer.AddInst(res);
         return nullptr;
     }
@@ -231,15 +206,14 @@ public:
             false_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
         exp = std::move(_exp);
     }
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
-        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
         res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
         res->name = nullptr;
-        res->used_by = parent;
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_BRANCH;
-        res->kind.data.branch.cond = (koopa_raw_value_t)exp->build_koopa_values(child_used_by);
+        res->kind.data.branch.cond = (koopa_raw_value_t)exp->build_koopa_values();
         koopa_raw_basic_block_data_t *true_block = new koopa_raw_basic_block_data_t();
         koopa_raw_basic_block_data_t *false_block = new koopa_raw_basic_block_data_t();
         koopa_raw_basic_block_data_t *end_block = new koopa_raw_basic_block_data_t();
@@ -285,12 +259,12 @@ public:
         exp = std::move(_exp);
     }
 
-    void *to_koopa_item(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
         res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
         res->name = nullptr;
-        res->used_by = parent;
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_INTEGER;
         res->kind.data.integer.value = exp->CalcValue();
         symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Const, res));
@@ -316,13 +290,12 @@ public:
         exp = std::move(_exp);
     }
 
-    void *build_koopa_values(koopa_raw_slice_t parent) const override
+    void *build_koopa_values() const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
-        koopa_raw_slice_t child_used_by = make_koopa_rs_single_element(res, KOOPA_RSIK_VALUE);
         res->ty = make_int_pointer_type();
         res->name = new_char_arr("@" + name);
-        res->used_by = parent;
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_ALLOC;
         block_maintainer.AddInst(res);
         symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Var, res));
@@ -335,7 +308,7 @@ public:
             store->used_by = empty_koopa_rs();
             store->kind.tag = KOOPA_RVT_STORE;
             store->kind.data.store.dest = res;
-            store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values(child_used_by);
+            store->kind.data.store.value = (koopa_raw_value_t)exp->build_koopa_values();
             block_maintainer.AddInst(store);
         }
 
