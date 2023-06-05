@@ -1,21 +1,16 @@
 fun @main(): i32 {
 %entry_main:
-  @a = alloc i32
-  store 2, @a
-  %0 = load @a
-  br %0, %true, %false
+  %temp = alloc i32
+  store 0, %temp
+  %0 = ne 1, 0
+  br %0, %true, %end
 
 %true:
-  %1 = load @a
-  %2 = add %1, 1
-  store %2, @a
+  %1 = ne 0, 0
+  store %1, %temp
   jump %end
 
 %end:
-  %3 = load @a
-  ret %3
-
-%false:
-  store 0, @a
-  jump %end
+  %2 = load %temp
+  ret %2
 }
