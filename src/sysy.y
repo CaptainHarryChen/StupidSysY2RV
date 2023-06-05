@@ -45,7 +45,7 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 %token <int_val> INT_CONST
 
 // 非终结符的类型定义
-%type <base_ast_val> FuncDef FuncType Block
+%type <base_ast_val> FuncDef FuncType Block IfExp
 %type <base_ast_val> LVal Number
 %type <base_ast_val> Exp PrimaryExp UnaryExp MulExp AddExp RelExp EqExp LAndExp LOrExp
 
@@ -100,12 +100,10 @@ Stmt
         auto lval = std::unique_ptr<BaseAST>($1);
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::Stmt, new AssignmentAST(lval, exp));
-    } | IF '(' Exp ')' {
-            env_stk.push_back(InstSet());
-        } Stmt ELSE {
+    } | IfExp Stmt ELSE {
             env_stk.push_back(InstSet());
         } Stmt {
-            auto exp = std::unique_ptr<BaseAST>($3);
+            auto exp = std::unique_ptr<BaseAST>($1);
             InstSet true_instset, false_instset;
             for(auto &inst : env_stk[env_stk.size()-2])
                 true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
@@ -115,20 +113,24 @@ Stmt
             env_stk.pop_back();
             add_inst(InstType::Branch, new BranchAST(exp, true_instset, false_instset));
         } 
-        | IF '(' Exp ')' {
-            env_stk.push_back(InstSet());
-        } Stmt {
-            auto exp = std::unique_ptr<BaseAST>($3);
+    | IfExp Stmt {
+            auto exp = std::unique_ptr<BaseAST>($1);
             InstSet true_instset;
             for(auto &inst : env_stk[env_stk.size()-1])
                 true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
             env_stk.pop_back();
             add_inst(InstType::Branch, new BranchAST(exp, true_instset));
-        }
+    }
     | ';' | Exp ';' {
         add_inst(InstType::Stmt, $1);
     } | Block {
         add_inst(InstType::Stmt, $1);
+    };
+
+IfExp 
+    : IF '(' Exp ')' {
+        env_stk.push_back(InstSet());
+        $$ = $3;
     };
 
 Decl : ConstDecl | VarDecl;
