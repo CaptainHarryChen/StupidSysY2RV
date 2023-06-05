@@ -8,6 +8,7 @@
 
 #include "koopa_util.hpp"
 #include "symbol_list.hpp"
+#include "block_maintainer.hpp"
 
 char *new_char_arr(std::string str);
 
@@ -16,6 +17,7 @@ class BaseAST
 {
 public:
     static SymbolList symbol_list;
+    static BlockMaintainer block_maintainer;
 
     virtual ~BaseAST() = default;
     virtual std::string to_string() const
@@ -28,7 +30,7 @@ public:
         assert(false);
         return nullptr;
     };
-    virtual void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const
+    virtual void *build_koopa_values(koopa_raw_slice_t parent) const
     {
         std::cerr << "Not Implement build_koopa_values" << std::endl;
         assert(false);
@@ -62,10 +64,9 @@ public:
         res->kind.data.integer.value = val;
         return res;
     }
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         auto res = to_koopa_item(parent);
-        // buf.push_back(res);
         return res;
     }
     int CalcValue() const override

@@ -23,18 +23,9 @@ struct LValSymbol
 
 class SymbolList
 {
-    std::vector<const void *> *basic_block_buf;
     std::vector<std::map<std::string, LValSymbol>> sym_stk;
 
 public:
-    void SetBasicBlockBuf(std::vector<const void *> *_basic_block_buf)
-    {
-        basic_block_buf = _basic_block_buf;
-    }
-    void AddNewBasicBlock(const void *basic_block)
-    {
-        basic_block_buf->push_back(basic_block);
-    }
     void NewEnv()
     {
         sym_stk.push_back(std::map<std::string, LValSymbol>());

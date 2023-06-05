@@ -12,9 +12,9 @@ public:
         unaryExp = std::move(_unaryExp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
-        return unaryExp->build_koopa_values(buf, parent);
+        return unaryExp->build_koopa_values(parent);
     }
 
     int CalcValue() const override
@@ -36,7 +36,7 @@ public:
     }
 
     // 将变量作为右值返回（读取变量里存储的值）
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         koopa_raw_value_data *res = new koopa_raw_value_data();
         auto var = symbol_list.GetSymbol(name);
@@ -49,7 +49,7 @@ public:
             res->used_by = parent;
             res->kind.tag = KOOPA_RVT_LOAD;
             res->kind.data.load.src = var.number;
-            buf.push_back(res);
+            block_maintainer.AddInst(res);
         }
         return res;
     }
@@ -70,9 +70,9 @@ public:
     {
         nextExp = std::move(_nextExp);
     }
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
-        return nextExp->build_koopa_values(buf, parent);
+        return nextExp->build_koopa_values(parent);
     }
     int CalcValue() const override
     {
@@ -103,19 +103,19 @@ public:
         nextExp = std::move(_unary_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         NumberAST zero(0);
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)nextExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)nextExp->build_koopa_values(parent);
             break;
         case Op:
             if (op == "+")
             {
-                res = (koopa_raw_value_data *)nextExp->build_koopa_values(buf, parent);
+                res = (koopa_raw_value_data *)nextExp->build_koopa_values(parent);
                 break;
             }
             res = new koopa_raw_value_data();
@@ -129,9 +129,9 @@ public:
                 binary.op = KOOPA_RBO_SUB;
             else if (op == "!")
                 binary.op = KOOPA_RBO_EQ;
-            binary.lhs = (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-            binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(buf, child_used_by);
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)zero.build_koopa_values(child_used_by);
+            binary.rhs = (koopa_raw_value_t)nextExp->build_koopa_values(child_used_by);
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -176,13 +176,13 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -198,9 +198,9 @@ public:
                 binary.op = KOOPA_RBO_DIV;
             else if (op == "%")
                 binary.op = KOOPA_RBO_MOD;
-            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
-            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by);
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -245,13 +245,13 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -265,9 +265,9 @@ public:
                 binary.op = KOOPA_RBO_ADD;
             else if (op == "-")
                 binary.op = KOOPA_RBO_SUB;
-            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
-            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by);
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -310,13 +310,13 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -334,9 +334,9 @@ public:
                 binary.op = KOOPA_RBO_GT;
             else if (op == ">=")
                 binary.op = KOOPA_RBO_GE;
-            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
-            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by);
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -383,13 +383,13 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -403,9 +403,9 @@ public:
                 binary.op = KOOPA_RBO_EQ;
             else if (op == "!=")
                 binary.op = KOOPA_RBO_NOT_EQ;
-            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by);
-            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by);
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by);
+            binary.rhs = (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by);
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -425,7 +425,7 @@ public:
 
 class LAndExpAST : public BaseAST
 {
-    void *make_bool_koopa(std::vector<const void *> &buf, koopa_raw_slice_t parent, koopa_raw_value_t exp) const
+    void *make_bool_koopa(koopa_raw_slice_t parent, koopa_raw_value_t exp) const
     {
         NumberAST zero(0);
         koopa_raw_value_data *res = new koopa_raw_value_data();
@@ -437,8 +437,8 @@ class LAndExpAST : public BaseAST
         auto &binary = res->kind.data.binary;
         binary.op = KOOPA_RBO_NOT_EQ;
         binary.lhs = exp;
-        binary.rhs = (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-        buf.push_back(res);
+        binary.rhs = (koopa_raw_value_t)zero.build_koopa_values(child_used_by);
+        block_maintainer.AddInst(res);
         return res;
     }
 
@@ -465,14 +465,14 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         std::unique_ptr<NumberAST> zero(new NumberAST(0));
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -484,9 +484,9 @@ public:
             auto &binary = res->kind.data.binary;
             if (op == "&&")
                 binary.op = KOOPA_RBO_AND;
-            binary.lhs = (koopa_raw_value_t)make_bool_koopa(buf, child_used_by, (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by));
-            binary.rhs = (koopa_raw_value_t)make_bool_koopa(buf, child_used_by, (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by));
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)make_bool_koopa(child_used_by, (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by));
+            binary.rhs = (koopa_raw_value_t)make_bool_koopa(child_used_by, (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by));
+            block_maintainer.AddInst(res);
             break;
         }
         return res;
@@ -504,7 +504,7 @@ public:
 
 class LOrExpAST : public BaseAST
 {
-    void *make_bool_koopa(std::vector<const void *> &buf, koopa_raw_slice_t parent, koopa_raw_value_t exp) const
+    void *make_bool_koopa(koopa_raw_slice_t parent, koopa_raw_value_t exp) const
     {
         NumberAST zero(0);
         koopa_raw_value_data *res = new koopa_raw_value_data();
@@ -516,8 +516,8 @@ class LOrExpAST : public BaseAST
         auto &binary = res->kind.data.binary;
         binary.op = KOOPA_RBO_NOT_EQ;
         binary.lhs = exp;
-        binary.rhs = (koopa_raw_value_t)zero.build_koopa_values(buf, child_used_by);
-        buf.push_back(res);
+        binary.rhs = (koopa_raw_value_t)zero.build_koopa_values(child_used_by);
+        block_maintainer.AddInst(res);
         return res;
     }
 
@@ -544,14 +544,14 @@ public:
         rightExp = std::move(_right_exp);
     }
 
-    void *build_koopa_values(std::vector<const void *> &buf, koopa_raw_slice_t parent) const override
+    void *build_koopa_values(koopa_raw_slice_t parent) const override
     {
         std::unique_ptr<NumberAST> zero(new NumberAST(0));
         koopa_raw_value_data *res = nullptr;
         switch (type)
         {
         case Primary:
-            res = (koopa_raw_value_data *)leftExp->build_koopa_values(buf, parent);
+            res = (koopa_raw_value_data *)leftExp->build_koopa_values(parent);
             break;
         case Op:
             res = new koopa_raw_value_data();
@@ -563,9 +563,9 @@ public:
             auto &binary = res->kind.data.binary;
             if (op == "||")
                 binary.op = KOOPA_RBO_OR;
-            binary.lhs = (koopa_raw_value_t)make_bool_koopa(buf, child_used_by, (koopa_raw_value_t)leftExp->build_koopa_values(buf, child_used_by));
-            binary.rhs = (koopa_raw_value_t)make_bool_koopa(buf, child_used_by, (koopa_raw_value_t)rightExp->build_koopa_values(buf, child_used_by));
-            buf.push_back(res);
+            binary.lhs = (koopa_raw_value_t)make_bool_koopa(child_used_by, (koopa_raw_value_t)leftExp->build_koopa_values(child_used_by));
+            binary.rhs = (koopa_raw_value_t)make_bool_koopa(child_used_by, (koopa_raw_value_t)rightExp->build_koopa_values(child_used_by));
+            block_maintainer.AddInst(res);
             break;
         }
         return res;

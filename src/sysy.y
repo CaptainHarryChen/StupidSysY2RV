@@ -102,15 +102,6 @@ Stmt
         add_inst(InstType::Stmt, new AssignmentAST(lval, exp));
     } | IF '(' Exp ')' {
             env_stk.push_back(InstSet());
-        } Stmt {
-            auto exp = std::unique_ptr<BaseAST>($3);
-            InstSet true_instset;
-            for(auto &inst : env_stk[env_stk.size()-1])
-                true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
-            env_stk.pop_back();
-            add_inst(InstType::Branch, new BranchAST(exp, true_instset));
-    } | IF '(' Exp ')' {
-            env_stk.push_back(InstSet());
         } Stmt ELSE {
             env_stk.push_back(InstSet());
         } Stmt {
@@ -123,7 +114,17 @@ Stmt
             env_stk.pop_back();
             env_stk.pop_back();
             add_inst(InstType::Branch, new BranchAST(exp, true_instset, false_instset));
-    }
+        } 
+        | IF '(' Exp ')' {
+            env_stk.push_back(InstSet());
+        } Stmt {
+            auto exp = std::unique_ptr<BaseAST>($3);
+            InstSet true_instset;
+            for(auto &inst : env_stk[env_stk.size()-1])
+                true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
+            env_stk.pop_back();
+            add_inst(InstType::Branch, new BranchAST(exp, true_instset));
+        }
     | ';' | Exp ';' {
         add_inst(InstType::Stmt, $1);
     } | Block {

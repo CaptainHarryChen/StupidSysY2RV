@@ -1,5 +1,6 @@
 #include "ast.hpp"
 
+BlockMaintainer BaseAST::block_maintainer;
 SymbolList BaseAST::symbol_list;
 
 char *new_char_arr(std::string str)
