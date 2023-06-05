@@ -1,4 +1,6 @@
 int main() {
-  if (1) return 1;
-  return 0;
+  int a = 1, b=2;
+  if(a||b)
+    a = a + b;
+  return a;
 }

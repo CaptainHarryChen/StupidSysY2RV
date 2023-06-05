@@ -91,6 +91,18 @@ void RISCVBuilder::gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int
     output << "\tsw t0, " << addr << "(sp)" << endl;
 }
 
+void RISCVBuilder::gen_riscv_value_branch(const koopa_raw_branch_t *kbranch)
+{
+    load_to_reg(kbranch->cond, "t0");
+    output << "\tbnez t0, " << kbranch->true_bb->name + 1 << endl;
+    output << "\tj " << kbranch->false_bb->name + 1 << endl;
+}
+
+void RISCVBuilder::gen_riscv_value_jump(const koopa_raw_jump_t *kjump)
+{
+    output << "\tj " << kjump->target->name + 1 << endl;
+}
+
 void RISCVBuilder::gen_riscv_value_return(const koopa_raw_return_t *kret)
 {
     output << endl;

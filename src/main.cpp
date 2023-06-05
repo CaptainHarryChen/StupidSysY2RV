@@ -52,6 +52,13 @@ int main(int argc, const char *argv[])
             std::cout << "generate raw to koopa error: " << (int)eno << std::endl;
             return 0;
         }
+        koopa_dump_to_file(kp, output);
+    }
+    else if(strcmp(mode, "-riscv") == 0)
+    {
+        std::cout << "generate koopa file..." << std::endl;
+        koopa_program_t kp;
+        koopa_error_code_t eno = koopa_generate_raw_to_koopa(&krp, &kp);
         char *buffer = new char[1000000];
         size_t sz = 1000000u;
         eno = koopa_dump_to_string(kp, buffer, &sz);
@@ -60,16 +67,26 @@ int main(int argc, const char *argv[])
             std::cout << "koopa dump to string error: " << (int)eno << std::endl;
             return 0;
         }
-        koopa_dump_to_file(kp, output);
-    }
-    else if(strcmp(mode, "-riscv") == 0)
-    {
+        koopa_delete_program(kp);
+
+        koopa_program_t new_kp;
+        eno = koopa_parse_from_string(buffer, &new_kp);
+        if (eno != KOOPA_EC_SUCCESS)
+        {
+            std::cout << "generate raw to koopa error: " << (int)eno << std::endl;
+            return 0;
+        }
+        koopa_raw_program_builder_t kp_builder = koopa_new_raw_program_builder();
+        koopa_raw_program_t new_krp = koopa_build_raw_program(kp_builder, new_kp);
+        koopa_delete_program(new_kp);
+
         std::cout << "generate riscv file..." << std::endl;
         std::ofstream out(output);
         //RISCVBuilder builder(std::cout);
         RISCVBuilder builder(out);
-        builder.build(&krp);
+        builder.build(&new_krp);
         out.close();
+        koopa_delete_raw_program_builder(kp_builder);
     }
 
     return 0;

@@ -55,6 +55,8 @@ class RISCVBuilder
     void gen_riscv_value_load(const koopa_raw_load_t *kload, int addr);
     void gen_riscv_value_store(const koopa_raw_store_t *kstore);
     void gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int addr);
+    void gen_riscv_value_branch(const koopa_raw_branch_t *kbranch);
+    void gen_riscv_value_jump(const koopa_raw_jump_t *kjump);
     void gen_riscv_value_return(const koopa_raw_return_t *kret);
 
 public:

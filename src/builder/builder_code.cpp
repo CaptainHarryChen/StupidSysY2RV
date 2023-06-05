@@ -57,9 +57,10 @@ void RISCVBuilder::gen_riscv_func(koopa_raw_function_t kfunc)
 
 void RISCVBuilder::gen_riscv_block(koopa_raw_basic_block_t kblk)
 {
-    //TODO: name
     //TODO: params
     //TODO: used_by
+    output << endl;
+    output << kblk->name + 1 << ":" << endl;
     traversal_raw_slice(&kblk->insts);
 }
 
@@ -81,6 +82,12 @@ void RISCVBuilder::gen_riscv_value(koopa_raw_value_t kval)
         break;
     case KOOPA_RVT_BINARY:
         gen_riscv_value_binary(&kval->kind.data.binary, addr);
+        break;
+    case KOOPA_RVT_BRANCH:
+        gen_riscv_value_branch(&kval->kind.data.branch);
+        break;
+    case KOOPA_RVT_JUMP:
+        gen_riscv_value_jump(&kval->kind.data.jump);
         break;
     case KOOPA_RVT_RETURN:
         gen_riscv_value_return(&kval->kind.data.ret);
