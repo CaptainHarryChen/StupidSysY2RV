@@ -40,7 +40,7 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 }
 
 // lexer 返回的所有 token 种类的声明
-%token INT RETURN CONST IF ELSE
+%token INT RETURN CONST IF ELSE WHILE BREAK CONTINUE
 %token <str_val> IDENT UNARYOP MULOP ADDOP RELOP EQOP LANDOP LOROP
 %token <int_val> INT_CONST
 
@@ -120,6 +120,19 @@ Stmt
                 true_instset.push_back(std::make_pair(inst.first, std::move(inst.second)));
             env_stk.pop_back();
             add_inst(InstType::Branch, new BranchAST(exp, true_instset));
+    } | WHILE '(' Exp ')' {
+            env_stk.push_back(InstSet());
+        } Stmt {
+            auto exp = std::unique_ptr<BaseAST>($3);
+            InstSet while_body;
+            for(auto &inst : env_stk[env_stk.size()-1])
+                while_body.push_back(std::make_pair(inst.first, std::move(inst.second)));
+            env_stk.pop_back();
+            add_inst(InstType::While, new WhileAST(exp, while_body));
+    } | BREAK ';' {
+        add_inst(InstType::Break, new BreakAST());
+    } | CONTINUE ';' {
+        add_inst(InstType::Continue, new ContinueAST());
     }
     | ';' | Exp ';' {
         add_inst(InstType::Stmt, $1);

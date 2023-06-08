@@ -10,7 +10,10 @@ enum InstType
     ConstDecl,
     Decl,
     Stmt,
-    Branch
+    Branch,
+    While,
+    Break,
+    Continue
 };
 typedef std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> InstSet;
 
@@ -243,6 +246,80 @@ public:
         end_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         block_maintainer.AddNewBasicBlock(end_block);
         
+        return nullptr;
+    }
+};
+
+class WhileAST : public BaseAST
+{
+public:
+    std::unique_ptr<BaseAST> exp;
+    InstSet body_insts;
+    WhileAST(std::unique_ptr<BaseAST> &_exp, InstSet &_body_insts)
+    {
+        for (auto &inst : _body_insts)
+            body_insts.push_back(std::make_pair(inst.first, std::move(inst.second)));
+        exp = std::move(_exp);
+    }
+    void *build_koopa_values() const override
+    {
+        koopa_raw_basic_block_data_t *while_entry = new koopa_raw_basic_block_data_t();
+        koopa_raw_basic_block_data_t *while_body = new koopa_raw_basic_block_data_t();
+        koopa_raw_basic_block_data_t *end_block = new koopa_raw_basic_block_data_t();
+        loop_maintainer.AddLoop(while_entry, while_body, end_block);
+
+        block_maintainer.AddInst(JumpInst(while_entry));
+
+        while_entry->name = new_char_arr("%while_entry");
+        while_entry->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        while_entry->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        block_maintainer.AddNewBasicBlock(while_entry);
+
+        koopa_raw_value_data *br = new koopa_raw_value_data();
+        br->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
+        br->name = nullptr;
+        br->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        br->kind.tag = KOOPA_RVT_BRANCH;
+        br->kind.data.branch.cond = (koopa_raw_value_t)exp->build_koopa_values();
+        br->kind.data.branch.true_bb = while_body;
+        br->kind.data.branch.false_bb = end_block;
+        br->kind.data.branch.true_args = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        br->kind.data.branch.false_args = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        block_maintainer.AddInst(br);
+
+        while_body->name = new_char_arr("%while_body");
+        while_body->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        while_body->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        block_maintainer.AddNewBasicBlock(while_body);
+        BlockAST::add_InstSet(this->body_insts);
+        block_maintainer.AddInst(JumpInst(while_entry));
+
+        end_block->name = new_char_arr("%end");
+        end_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        end_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        block_maintainer.AddNewBasicBlock(end_block);
+        
+        loop_maintainer.PopLoop();
+        return nullptr;
+    }
+};
+
+class BreakAST : public BaseAST
+{
+public:
+    void *build_koopa_values() const override
+    {
+        block_maintainer.AddInst(JumpInst(loop_maintainer.GetLoop().end_block));
+        return nullptr;
+    }
+};
+
+class ContinueAST : public BaseAST
+{
+public:
+    void *build_koopa_values() const override
+    {
+        block_maintainer.AddInst(JumpInst(loop_maintainer.GetLoop().while_entry));
         return nullptr;
     }
 };

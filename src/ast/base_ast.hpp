@@ -9,6 +9,7 @@
 #include "koopa_util.hpp"
 #include "symbol_list.hpp"
 #include "block_maintainer.hpp"
+#include "loop_maintainer.hpp"
 
 char *new_char_arr(std::string str);
 
@@ -18,6 +19,7 @@ class BaseAST
 public:
     static SymbolList symbol_list;
     static BlockMaintainer block_maintainer;
+    static LoopMaintainer loop_maintainer;
 
     virtual ~BaseAST() = default;
     // 调试用字符串

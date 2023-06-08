@@ -2,6 +2,7 @@
 
 BlockMaintainer BaseAST::block_maintainer;
 SymbolList BaseAST::symbol_list;
+LoopMaintainer BaseAST::loop_maintainer;
 
 char *new_char_arr(std::string str)
 {
