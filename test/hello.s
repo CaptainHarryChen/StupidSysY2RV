@@ -1,21 +1,18 @@
 .text
 .globl main
 main:
-	addi sp, sp, 16
+	addi sp, sp, -16
 
 entry_main:
-	j while_entry
 
-while_entry:
-	li t0, 1
-	bnez t0, while_body
-	j end
+	lw t0, 8(sp)
+	sw t0, 12(sp)
 
-while_body:
-	j end
+	lw t0, 12(sp)
+	li t1, 1
+	add t0, t0, t1
+	sw t0, 4(sp)
 
-end:
-
-	li a0, 0
+	lw a0, 4(sp)
 	addi sp, sp, 16
 	ret

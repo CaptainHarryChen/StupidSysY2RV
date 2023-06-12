@@ -1,23 +1,26 @@
 #include "builder/riscv_builder.hpp"
 
-int RISCVBuilder::calc_func_size(koopa_raw_function_t kfunc)
+int RISCVBuilder::calc_func_size(koopa_raw_function_t kfunc, bool &has_call)
 {
     int total_size = 0;
     for (uint32_t i = 0; i < kfunc->bbs.len; i++)
     {
         const void *data = kfunc->bbs.buffer[i];
-        total_size += calc_blk_size((koopa_raw_basic_block_t)data);
+        total_size += calc_blk_size((koopa_raw_basic_block_t)data, has_call);
     }
+    total_size += has_call ? 4 : 0;
     return total_size;
 }
 
-int RISCVBuilder::calc_blk_size(koopa_raw_basic_block_t kblk)
+int RISCVBuilder::calc_blk_size(koopa_raw_basic_block_t kblk, bool &has_call)
 {
     // TODO: did not count params 
     int total_size = 0;
     for (uint32_t i = 0; i < kblk->insts.len; i++)
     {
         const void *data = kblk->insts.buffer[i];
+        if(((koopa_raw_value_t)data)->kind.tag == KOOPA_RVT_CALL)
+            has_call = true;
         total_size += calc_inst_size((koopa_raw_value_t)data);
     }
     return total_size;
@@ -40,17 +43,23 @@ int RISCVBuilder::calc_inst_size(koopa_raw_value_t kval)
 
 void RISCVBuilder::gen_riscv_func(koopa_raw_function_t kfunc)
 {
+    if(kfunc->bbs.len == 0)
+        return;
     const char *name = kfunc->name + 1;
     output << ".globl " << name << endl;
     output << name << ":" << endl;
 
-    // TODO: ty ???
-    // TODO: params ????
-
-    int size = calc_func_size(kfunc);
-    size = ((size - 15) / 16 + 1) * 16;
-    output << "\taddi sp, sp, " << size << endl;
-    env.NewEnv(size);
+    bool has_call = false;
+    int size = calc_func_size(kfunc, has_call);
+    if(size != 0)
+    {
+        size = ((size - 1) / 16 + 1) * 16;
+        output << "\taddi sp, sp, " << -size << endl;
+    }
+    if(has_call)
+        output << "\tsw ra, " << size-4 << "(sp)" << endl;
+    env.NewEnv(size, has_call);
+    env.cur -= (has_call ? 4 : 0);
     // blocks
     traversal_raw_slice(&kfunc->bbs);
 }
@@ -88,6 +97,9 @@ void RISCVBuilder::gen_riscv_value(koopa_raw_value_t kval)
         break;
     case KOOPA_RVT_JUMP:
         gen_riscv_value_jump(&kval->kind.data.jump);
+        break;
+    case KOOPA_RVT_CALL:
+        gen_riscv_value_call(&kval->kind.data.call, kval->ty->tag == KOOPA_RTT_UNIT ? -1 : addr);
         break;
     case KOOPA_RVT_RETURN:
         gen_riscv_value_return(&kval->kind.data.ret);

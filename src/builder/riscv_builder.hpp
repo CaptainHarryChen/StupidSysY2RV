@@ -12,14 +12,17 @@ class RISCVBuilder
 {
     class Env
     {
-        int total_size;
-        int cur;
+        int total_size;    
         map<koopa_raw_value_t, int> addr;
 
     public:
-        void NewEnv(int size)
+        int cur;
+        bool has_call;
+
+        void NewEnv(int size, bool _has_call)
         {
             total_size = cur = size;
+            has_call = _has_call;
             addr.clear();
         }
         int GetTotalSize()
@@ -42,8 +45,8 @@ class RISCVBuilder
     Env env;
     ostream &output;
 
-    static int calc_func_size(koopa_raw_function_t kfunc);
-    static int calc_blk_size(koopa_raw_basic_block_t kblk);
+    static int calc_func_size(koopa_raw_function_t kfunc, bool &has_call);
+    static int calc_blk_size(koopa_raw_basic_block_t kblk, bool &has_call);
     static int calc_inst_size(koopa_raw_value_t kval);
 
     void traversal_raw_slice(const koopa_raw_slice_t *rs);
@@ -57,6 +60,7 @@ class RISCVBuilder
     void gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int addr);
     void gen_riscv_value_branch(const koopa_raw_branch_t *kbranch);
     void gen_riscv_value_jump(const koopa_raw_jump_t *kjump);
+    void gen_riscv_value_call(const koopa_raw_call_t *kcall, int addr);
     void gen_riscv_value_return(const koopa_raw_return_t *kret);
 
 public:
