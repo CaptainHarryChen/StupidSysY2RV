@@ -1,13 +1,135 @@
+decl @getint(): i32
+
+decl @getch(): i32
+
+decl @getarray(*i32): i32
+
+decl @putint(i32)
+
+decl @putch(i32)
+
+decl @putarray(i32, *i32)
+
+decl @starttime()
+
+decl @stoptime()
+
+fun @add(@a: i32, @b: i32): i32 {
+%entry_add:
+  @a_0 = alloc i32
+  store @a, @a_0
+  @b_0 = alloc i32
+  store @b, @b_0
+  %0 = load @a_0
+  %1 = load @b_0
+  %2 = add %0, %1
+  ret %2
+}
+
+fun @sub(@a: i32, @b: i32): i32 {
+%entry_sub:
+  @a_0 = alloc i32
+  store @a, @a_0
+  @b_0 = alloc i32
+  store @b, @b_0
+  %3 = load @a_0
+  %4 = load @b_0
+  %5 = sub %3, %4
+  ret %5
+}
+
+fun @mul(@a: i32, @b: i32): i32 {
+%entry_mul:
+  @a_0 = alloc i32
+  store @a, @a_0
+  @b_0 = alloc i32
+  store @b, @b_0
+  %6 = load @a_0
+  %7 = load @b_0
+  %8 = mul %6, %7
+  ret %8
+}
+
+fun @div(@a: i32, @b: i32): i32 {
+%entry_div:
+  @a_0 = alloc i32
+  store @a, @a_0
+  @b_0 = alloc i32
+  store @b, @b_0
+  %9 = load @a_0
+  %10 = load @b_0
+  %11 = div %9, %10
+  ret %11
+}
+
 fun @main(): i32 {
 %entry_main:
-  jump %while_entry
+  @x = alloc i32
+  %12 = call @sub(1, 2)
+  %13 = call @div(4, 5)
+  %14 = call @mul(3, %13)
+  %15 = call @add(%12, %14)
+  store %15, @x
+  @y = alloc i32
+  %temp = alloc i32
+  store 1, %temp
+  %16 = eq 1, 0
+  br %16, %true, %end
 
-%while_entry:
-  br 1, %while_body, %end
-
-%while_body:
+%true:
+  %17 = ne 0, 0
+  store %17, %temp
   jump %end
 
 %end:
-  ret 0
+  %18 = load %temp
+  %temp_0 = alloc i32
+  store 1, %temp_0
+  %temp_1 = alloc i32
+  store 0, %temp_1
+  %19 = ne 0, 0
+  br %19, %true_0, %end_0
+
+%true_0:
+  %20 = load @x
+  %21 = call @sub(1, %20)
+  %22 = ne %21, 0
+  store %22, %temp_1
+  jump %end_0
+
+%end_0:
+  %23 = load %temp_1
+  %24 = eq %23, 0
+  br %24, %true_1, %end_1
+
+%true_1:
+  %temp_2 = alloc i32
+  store 1, %temp_2
+  %25 = load @x
+  %26 = eq %25, 0
+  br %26, %true_2, %end_2
+
+%true_2:
+  %27 = call @add(1, 2)
+  %28 = gt %27, 10
+  %29 = ne %28, 0
+  store %29, %temp_2
+  jump %end_2
+
+%end_2:
+  %30 = load %temp_2
+  %31 = call @div(%30, 5)
+  %32 = call @mul(3, %31)
+  %33 = ne %32, 0
+  store %33, %temp_0
+  jump %end_1
+
+%end_1:
+  %34 = load %temp_0
+  %35 = call @add(%18, %34)
+  store %35, @y
+  %36 = load @x
+  %37 = load @y
+  %38 = add %36, %37
+  ret %38
 }

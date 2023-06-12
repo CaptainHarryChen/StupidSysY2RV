@@ -14,6 +14,10 @@
 #include "ast/ast.hpp"
 
 std::vector<InstSet> env_stk;
+std::vector<BaseAST*> value_list;
+std::vector<BaseAST*> func_list;
+std::vector<BaseAST*> fparams;
+std::vector<std::vector<BaseAST*>> rparams;
 
 void add_inst(InstType instType, BaseAST *ast)
 {
@@ -40,12 +44,12 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 }
 
 // lexer 返回的所有 token 种类的声明
-%token INT RETURN CONST IF ELSE WHILE BREAK CONTINUE
+%token INT VOID RETURN CONST IF ELSE WHILE BREAK CONTINUE
 %token <str_val> IDENT UNARYOP MULOP ADDOP RELOP EQOP LANDOP LOROP
 %token <int_val> INT_CONST
 
 // 非终结符的类型定义
-%type <base_ast_val> FuncDef FuncType Block IfExp
+%type <base_ast_val> FuncDef BType Block IfExp
 %type <base_ast_val> LVal Number
 %type <base_ast_val> Exp PrimaryExp UnaryExp MulExp AddExp RelExp EqExp LAndExp LOrExp
 
@@ -53,29 +57,54 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 
 // 开始符, CompUnit ::= FuncDef, 大括号后声明了解析完成后 parser 要做的事情
 // $1 指代规则里第一个符号的返回值, 也就是 FuncDef 的返回值
-CompUnit
+CompUnit 
+    : {
+        env_stk.push_back(InstSet());
+        }
+        GlobalList {
+        ast = std::unique_ptr<BaseAST>(new CompUnitAST(func_list, env_stk[env_stk.size()-1]));
+        env_stk.pop_back();
+    };
+
+GlobalList
     : FuncDef {
-        auto func = std::unique_ptr<BaseAST>($1);
-        ast = std::unique_ptr<BaseAST>(new CompUnitAST(func));
-    }
-    ;
+        func_list.push_back($1);
+    } | GlobalList FuncDef {
+        func_list.push_back($2);
+    } 
+    | Decl | GlobalList Decl ;
 
 // FuncDef ::= FuncType IDENT '(' ')' Block;
 // $$ 表示非终结符的返回值, 我们可以通过给这个符号赋值的方法来返回结果
 FuncDef
-    : FuncType IDENT '(' ')' Block {
-        auto type = std::unique_ptr<BaseAST>($1);
+    : BType IDENT '('  {
+            fparams.clear();
+        } FuncFParams ')' Block {
+            auto rettype = std::unique_ptr<BaseAST>($1);
+            auto ident = std::unique_ptr<std::string>($2);
+            auto block = std::unique_ptr<BaseAST>($7);
+            $$ = new FuncDefAST(rettype, ident->c_str(), fparams, block);
+    } | BType IDENT '(' ')' Block {
+        auto rettype = std::unique_ptr<BaseAST>($1);
         auto ident = std::unique_ptr<std::string>($2);
         auto block = std::unique_ptr<BaseAST>($5);
-        $$ = new FuncDefAST(type, ident->c_str(), block);
-    }
-    ;
+        fparams.clear();
+        $$ = new FuncDefAST(rettype, ident->c_str(), fparams, block);
+    };
 
-FuncType
+BType
     : INT {
-        $$ = new FuncTypeAST("int");
-    }
-    ;
+        $$ = new BTypeAST("int");
+    } | VOID {
+        $$ = new BTypeAST("void");
+    };
+
+FuncFParams : FuncFParam | FuncFParams ',' FuncFParam;
+
+FuncFParam
+    : INT IDENT {
+        fparams.push_back(new FuncFParamAST(FuncFParamAST::Int, $2->c_str(), fparams.size()));
+    };
 
 Block :
     '{' {
@@ -148,7 +177,7 @@ IfExp
 
 Decl : ConstDecl | VarDecl;
 
-ConstDecl : CONST INT ConstDefList ';';
+ConstDecl : CONST BType ConstDefList ';';
 ConstDefList : ConstDef | ConstDefList ',' ConstDef
 ConstDef
     : IDENT '=' Exp {
@@ -156,7 +185,7 @@ ConstDef
         add_inst(InstType::ConstDecl, new ConstDefAST($1->c_str(), exp));
     };
 
-VarDecl : INT VarDefList ';';
+VarDecl : BType VarDefList ';';
 VarDefList : VarDef | VarDefList ',' VarDef
 VarDef
     : IDENT {
@@ -208,7 +237,25 @@ UnaryExp
         auto unary_exp = std::unique_ptr<BaseAST>($2);
         $$ = new UnaryExpAST(op->c_str(), unary_exp);
     }
+    | IDENT '(' {
+            rparams.push_back(std::vector<BaseAST*>());
+        } FuncRParams ')' {
+            $$ = new UnaryExpAST($1->c_str(), rparams[rparams.size()-1]);
+            rparams.pop_back();
+    }
+    | IDENT '(' ')' {
+        rparams.push_back(std::vector<BaseAST*>());
+        $$ = new UnaryExpAST($1->c_str(), rparams[rparams.size()-1]);
+        rparams.pop_back();
+    }
     ;
+
+FuncRParams : FuncRParam | FuncRParams ',' FuncRParam;
+
+FuncRParam 
+    : Exp {
+        rparams[rparams.size()-1].push_back($1);
+    }
 
 MulExp
     : UnaryExp {

@@ -72,3 +72,23 @@ koopa_raw_value_data *JumpInst(koopa_raw_basic_block_t target)
     res->kind.data.jump.target = target;
     return res;
 }
+
+koopa_raw_value_data *AllocIntInst(const std::string &name)
+{
+    koopa_raw_value_data *res = new koopa_raw_value_data();
+    res->ty = make_int_pointer_type();
+    res->name = new_char_arr(name);
+    res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+    res->kind.tag = KOOPA_RVT_ALLOC;
+    return res;
+}
+
+koopa_raw_value_data *ZeroInit()
+{
+    koopa_raw_value_data *res = new koopa_raw_value_data();
+    res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    res->name = nullptr;
+    res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+    res->kind.tag = KOOPA_RVT_ZERO_INIT;
+    return res;
+}

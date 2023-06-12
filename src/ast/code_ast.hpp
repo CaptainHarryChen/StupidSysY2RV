@@ -20,99 +20,83 @@ typedef std::vector<std::pair<InstType, std::unique_ptr<BaseAST>>> InstSet;
 // CompUnit 是 BaseAST
 class CompUnitAST : public BaseAST
 {
+    void add_lib_funcs(std::vector<const void*> &funcs) const;
+
 public:
     // 用智能指针管理对象
-    std::unique_ptr<BaseAST> func_def;
+    std::vector<std::unique_ptr<BaseAST>> func_list;
+    InstSet value_list;
 
-    CompUnitAST(std::unique_ptr<BaseAST> &_func_def)
-    {
-        func_def = std::move(_func_def);
-    }
-
-    std::string to_string() const override
-    {
-        return "CompUnitAST { " + func_def->to_string() + " }";
-    }
+    CompUnitAST(std::vector<BaseAST*> &_func_list, InstSet &_value_list);
 
     koopa_raw_program_t to_koopa_raw_program() const
     {
+        symbol_list.NewEnv();
+        std::vector<const void *> values;
         std::vector<const void *> funcs;
-        funcs.push_back(func_def->build_koopa_values());
+        add_lib_funcs(funcs);
+        for(auto &pa : value_list)
+        {
+            assert(pa.first == ConstDecl || pa.first == Decl);
+            if(pa.first == ConstDecl)
+                pa.second->build_koopa_values();
+            else
+                values.push_back(pa.second->build_koopa_values());
+        }
+        for(auto &func_ast : func_list)
+            funcs.push_back(func_ast->build_koopa_values());
+        symbol_list.DeleteEnv();
 
         koopa_raw_program_t res;
-        res.values = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        res.values = make_koopa_rs_from_vector(values, KOOPA_RSIK_VALUE);
         res.funcs = make_koopa_rs_from_vector(funcs, KOOPA_RSIK_FUNCTION);
 
         return res;
     }
 };
 
-// FuncDef 也是 BaseAST
-class FuncDefAST : public BaseAST
-{
-public:
-    std::unique_ptr<BaseAST> func_type;
-    std::string ident;
-    std::unique_ptr<BaseAST> block;
-
-    FuncDefAST(std::unique_ptr<BaseAST> &_func_type, const char *_ident, std::unique_ptr<BaseAST> &_block)
-        : ident(_ident)
-    {
-        func_type = std::move(_func_type);
-        block = std::move(_block);
-    }
-
-    std::string to_string() const override
-    {
-        return "FuncDefAST { " + func_type->to_string() + ", " + ident + ", " + block->to_string() + " }";
-    }
-
-    void *build_koopa_values() const override
-    {
-        koopa_raw_function_data_t *res = new koopa_raw_function_data_t();
-
-        koopa_raw_type_kind_t *ty = new koopa_raw_type_kind_t();
-        ty->tag = KOOPA_RTT_FUNCTION;
-        ty->data.function.params = empty_koopa_rs(KOOPA_RSIK_TYPE);
-        ty->data.function.ret = (const struct koopa_raw_type_kind *)func_type->build_koopa_values();
-        res->ty = ty;
-        res->name = new_char_arr("@" + ident);
-        res->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
-
-        std::vector<const void *> blocks;
-        block_maintainer.SetBasicBlockBuf(&blocks);
-
-        koopa_raw_basic_block_data_t *entry_block = new koopa_raw_basic_block_data_t();
-        entry_block->name = new_char_arr("%entry_" + ident);
-        entry_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
-        entry_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
-
-        block_maintainer.AddNewBasicBlock(entry_block);
-        block->build_koopa_values();
-        block_maintainer.FinishCurrentBlock();
-
-        res->bbs = make_koopa_rs_from_vector(blocks, KOOPA_RSIK_BASIC_BLOCK);
-
-        return res;
-    }
-};
-
-class FuncTypeAST : public BaseAST
+class BTypeAST : public BaseAST
 {
 public:
     std::string name;
-    FuncTypeAST(const char *_name) : name(_name) {}
-
-    std::string to_string() const override
-    {
-        return "FuncTypeAST { " + name + " }";
-    }
+    BTypeAST(const char *_name) : name(_name) {}
 
     void *build_koopa_values() const override
     {
         if (name == "int")
             return simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+        else if(name == "void")
+            return simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
         return nullptr; // not implement
+    }
+};
+
+class FuncFParamAST : public BaseAST
+{
+public:
+    enum ParamType
+    {
+        Int
+    } type;
+    std::string name;
+    int index;
+
+    FuncFParamAST(ParamType _type, const char *_name, int _index) : type(_type), name(_name), index(_index) {}
+
+    void *get_koopa_type() const
+    {
+        return simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    }
+
+    void *build_koopa_values() const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        res->ty = (koopa_raw_type_kind*)get_koopa_type();
+        res->name = new_char_arr("@" + name);
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        res->kind.tag = KOOPA_RVT_FUNC_ARG_REF;
+        res->kind.data.func_arg_ref.index = index;
+        return res;
     }
 };
 
@@ -137,10 +121,93 @@ public:
         symbol_list.DeleteEnv();
     }
 
+    void build_koopa_values_no_env() const
+    {
+        for (const auto &inst : insts)
+            inst.second->build_koopa_values();
+    }
+
     void *build_koopa_values() const override
     {
         add_InstSet(insts);
         return nullptr;
+    }
+};
+
+// FuncDef 也是 BaseAST
+class FuncDefAST : public BaseAST
+{
+public:
+    std::unique_ptr<BaseAST> func_type;
+    std::string ident;
+    std::vector<std::unique_ptr<FuncFParamAST>> fparams;
+    std::unique_ptr<BlockAST> block;
+
+    FuncDefAST(std::unique_ptr<BaseAST> &_func_type, const char *_ident, std::vector<BaseAST*> &_fparams, std::unique_ptr<BaseAST> &_block)
+        : ident(_ident)
+    {
+        func_type = std::move(_func_type);
+        for(BaseAST* fp : _fparams)
+            fparams.emplace_back(dynamic_cast<FuncFParamAST*>(fp));
+        block = std::unique_ptr<BlockAST>(dynamic_cast<BlockAST*>(_block.release()));
+    }
+
+    std::string to_string() const override
+    {
+        return "FuncDefAST { " + func_type->to_string() + ", " + ident + ", " + block->to_string() + " }";
+    }
+
+    void *build_koopa_values() const override
+    {
+        koopa_raw_function_data_t *res = new koopa_raw_function_data_t();
+        symbol_list.AddSymbol(ident, LValSymbol(LValSymbol::Function, res));
+
+        koopa_raw_type_kind_t *ty = new koopa_raw_type_kind_t();
+        ty->tag = KOOPA_RTT_FUNCTION;
+        std::vector<const void*> par;
+        for(auto &fp : fparams)
+            par.push_back(fp->get_koopa_type());
+        ty->data.function.params = make_koopa_rs_from_vector(par, KOOPA_RSIK_TYPE);
+        ty->data.function.ret = (const struct koopa_raw_type_kind *)func_type->build_koopa_values();
+        res->ty = ty;
+        res->name = new_char_arr("@" + ident);
+        par.clear();
+        for(auto &fp : fparams)
+            par.push_back(fp->build_koopa_values());
+        res->params = make_koopa_rs_from_vector(par, KOOPA_RSIK_VALUE);
+
+        std::vector<const void *> blocks;
+        block_maintainer.SetBasicBlockBuf(&blocks);
+
+        koopa_raw_basic_block_data_t *entry_block = new koopa_raw_basic_block_data_t();
+        entry_block->name = new_char_arr("%entry_" + ident);
+        entry_block->params = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        entry_block->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+
+        symbol_list.NewEnv();
+        block_maintainer.AddNewBasicBlock(entry_block);
+        for(size_t i = 0; i < fparams.size(); i++)
+        {
+            auto &fp = fparams[i];
+            koopa_raw_value_data *allo = AllocIntInst("@" + fp->name);
+            symbol_list.AddSymbol(fp->name, LValSymbol(LValSymbol::Var, allo));
+            block_maintainer.AddInst(allo);
+            koopa_raw_value_data *sto = new koopa_raw_value_data();
+            sto->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
+            sto->name = nullptr;
+            sto->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+            sto->kind.tag = KOOPA_RVT_STORE;
+            sto->kind.data.store.value = (koopa_raw_value_t)par[i];
+            sto->kind.data.store.dest = allo;
+            block_maintainer.AddInst(sto);
+        }
+        block->build_koopa_values_no_env();
+        symbol_list.DeleteEnv();
+        block_maintainer.FinishCurrentBlock();
+
+        res->bbs = make_koopa_rs_from_vector(blocks, KOOPA_RSIK_BASIC_BLOCK);
+
+        return res;
     }
 };
 
@@ -389,6 +456,36 @@ public:
             block_maintainer.AddInst(store);
         }
 
+        return res;
+    }
+};
+
+class GlobalVarDefAST : public BaseAST
+{
+public:
+    std::string name;
+    std::unique_ptr<BaseAST> exp;
+
+    GlobalVarDefAST(std::unique_ptr<BaseAST> &vardef_ast)
+    {
+        VarDefAST *var = dynamic_cast<VarDefAST*>(vardef_ast.release());
+        name = var->name;
+        exp = std::move(var->exp);
+    }
+
+    void *build_koopa_values() const override
+    {
+        koopa_raw_value_data *res = new koopa_raw_value_data();
+        res->ty = make_int_pointer_type();
+        res->name = new_char_arr("@" + name);
+        res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+        res->kind.tag = KOOPA_RVT_GLOBAL_ALLOC;
+        if(exp)
+            res->kind.data.global_alloc.init = (koopa_raw_value_data*)exp->build_koopa_values();
+        else
+            res->kind.data.global_alloc.init = ZeroInit();
+        block_maintainer.AddInst(res);
+        symbol_list.AddSymbol(name, LValSymbol(LValSymbol::Var, res));
         return res;
     }
 };

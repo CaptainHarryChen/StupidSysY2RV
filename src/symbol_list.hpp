@@ -14,11 +14,12 @@ struct LValSymbol
     enum SymbolType
     {
         Const,
-        Var
+        Var,
+        Function
     } type;
-    koopa_raw_value_t number;
+    void *number;
     LValSymbol() {}
-    LValSymbol(SymbolType _type, koopa_raw_value_t _number) : type(_type), number(_number) {}
+    LValSymbol(SymbolType _type, void * _number) : type(_type), number(_number) {}
 };
 
 class SymbolList

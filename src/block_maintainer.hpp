@@ -22,14 +22,26 @@ public:
         if (basic_block_buf->size() > 0)
         {
             koopa_raw_basic_block_data_t *last_block = (koopa_raw_basic_block_data_t *)(*basic_block_buf)[basic_block_buf->size() - 1];
+            bool found = false;
             for (size_t i = 0; i < current_insts_buf.size(); i++)
             {
                 koopa_raw_value_t t = (koopa_raw_value_t)current_insts_buf[i];
                 if (t->kind.tag == KOOPA_RVT_BRANCH || t->kind.tag == KOOPA_RVT_RETURN || t->kind.tag == KOOPA_RVT_JUMP)
                 {
                     current_insts_buf.resize(i + 1);
+                    found = true;
                     break;
                 }
+            }
+            if(!found)
+            {
+                koopa_raw_value_data *ret = new koopa_raw_value_data();
+                ret->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
+                ret->name = nullptr;
+                ret->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                ret->kind.tag = KOOPA_RVT_RETURN;
+                ret->kind.data.ret.value = nullptr;
+                current_insts_buf.push_back(ret);
             }
             if (!last_block->insts.buffer)
                 last_block->insts = make_koopa_rs_from_vector(current_insts_buf, KOOPA_RSIK_VALUE);

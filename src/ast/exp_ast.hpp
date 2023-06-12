@@ -48,7 +48,7 @@ public:
             res->name = nullptr;
             res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
             res->kind.tag = KOOPA_RVT_LOAD;
-            res->kind.data.load.src = var.number;
+            res->kind.data.load.src = (koopa_raw_value_t)var.number;
             block_maintainer.AddInst(res);
         }
         return res;
@@ -58,7 +58,7 @@ public:
     {
         auto var = symbol_list.GetSymbol(name);
         assert(var.type == LValSymbol::Const);
-        return var.number->kind.data.integer.value;
+        return ((koopa_raw_value_t)var.number)->kind.data.integer.value;
     }
 };
 
@@ -86,10 +86,12 @@ public:
     enum
     {
         Primary,
-        Op
+        Op,
+        Function
     } type;
     std::string op;
     std::unique_ptr<BaseAST> nextExp; // PrimaryExp or UnaryExp
+    std::vector<BaseAST*> funcRParams;
 
     UnaryExpAST(std::unique_ptr<BaseAST> &_primary_exp)
     {
@@ -102,15 +104,34 @@ public:
         op = std::string(_op);
         nextExp = std::move(_unary_exp);
     }
+    UnaryExpAST(const char *_ident, std::vector<BaseAST*> &rparams) : op(_ident), funcRParams(rparams)
+    {
+        type = Function;
+    }
 
     void *build_koopa_values() const override
     {
         NumberAST zero(0);
         koopa_raw_value_data *res = nullptr;
+        koopa_raw_function_data_t *func = nullptr;
+        std::vector<const void *> rpa;
         switch (type)
         {
         case Primary:
             res = (koopa_raw_value_data *)nextExp->build_koopa_values();
+            break;
+        case Function:
+            func = (koopa_raw_function_data_t *)symbol_list.GetSymbol(op).number;
+            for(auto rp : funcRParams)
+                rpa.push_back(rp->build_koopa_values());
+            res = new koopa_raw_value_data();
+            res->ty = func->ty->data.function.ret;
+            res->name = nullptr;
+            res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+            res->kind.tag = KOOPA_RVT_CALL;
+            res->kind.data.call.callee = func;
+            res->kind.data.call.args = make_koopa_rs_from_vector(rpa, KOOPA_RSIK_VALUE);
+            block_maintainer.AddInst(res);
             break;
         case Op:
             if (op == "+")

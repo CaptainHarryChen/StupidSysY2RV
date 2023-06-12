@@ -1,4 +1,4 @@
-#include "ast.hpp"
+#include "ast/ast.hpp"
 
 BlockMaintainer BaseAST::block_maintainer;
 SymbolList BaseAST::symbol_list;
