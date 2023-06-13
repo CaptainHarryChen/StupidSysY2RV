@@ -1,4 +1,4 @@
-global @var = alloc i32, zeroinit
+global @a = alloc i32, 10
 
 decl @getint(): i32
 
@@ -16,9 +16,50 @@ decl @starttime()
 
 decl @stoptime()
 
+fun @inc(): i32 {
+%entry_inc:
+  %0 = load @a
+  %1 = add %0, 1
+  store %1, @a
+  %2 = load @a
+  ret %2
+}
+
+fun @print_a() {
+%entry_print_a:
+  %3 = load @a
+  call @putint(%3)
+  call @putch(10)
+  ret
+}
+
 fun @main(): i32 {
 %entry_main:
-  %0 = load @var
-  %1 = add %0, 1
-  ret %1
+  @i = alloc i32
+  store 0, @i
+  jump %while_entry
+
+%while_entry:
+  %4 = load @i
+  %5 = lt %4, 10
+  br %5, %while_body, %end
+
+%while_body:
+  %6 = call @inc()
+  @a_0 = alloc i32
+  store 1, @a_0
+  %7 = load @a_0
+  %8 = add %7, 2
+  store %8, @a_0
+  %9 = load @a_0
+  call @putint(%9)
+  call @putch(10)
+  call @print_a()
+  %10 = load @i
+  %11 = add %10, 1
+  store %11, @i
+  jump %while_entry
+
+%end:
+  ret 0
 }

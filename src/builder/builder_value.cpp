@@ -4,8 +4,23 @@ void RISCVBuilder::load_to_reg(koopa_raw_value_t kval, const char *reg)
 {
     if (kval->kind.tag == KOOPA_RVT_INTEGER)
         output << "\tli " << reg << ", " << kval->kind.data.integer.value << endl;
+    else if(kval->kind.tag == KOOPA_RVT_GLOBAL_ALLOC)
+    {
+        output << "\tla t0, " << kval->name + 1 << endl;
+        output << "\tlw " << reg << ", 0(t0)" << endl;
+    }
     else
         output << "\tlw " << reg << ", " << env.GetAddr(kval) << "(sp)" << endl;
+}
+
+void RISCVBuilder::gen_riscv_value_global_alloc(koopa_raw_value_t kalloc)
+{
+    output << ".globl " << kalloc->name + 1 << endl;
+    output << kalloc->name + 1 << ":" << endl;
+    if (kalloc->kind.data.global_alloc.init->kind.tag == KOOPA_RVT_ZERO_INIT)
+        output << "\t.zero 4" << endl;
+    else
+        output << "\t.word " << kalloc->kind.data.global_alloc.init->kind.data.integer.value << endl;
 }
 
 void RISCVBuilder::gen_riscv_value_load(const koopa_raw_load_t *kload, int addr)
@@ -19,21 +34,29 @@ void RISCVBuilder::gen_riscv_value_load(const koopa_raw_load_t *kload, int addr)
 void RISCVBuilder::gen_riscv_value_store(const koopa_raw_store_t *kstore)
 {
     output << endl;
-
+    
+    std::string dest;
+    if(kstore->dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC)
+    {
+        output << "\tla t1, " << kstore->dest->name + 1 << endl;
+        dest = "0(t1)";
+    }
+    else
+        dest = std::to_string(env.GetAddr(kstore->dest)) + "(sp)";
     if(kstore->value->kind.tag == KOOPA_RVT_FUNC_ARG_REF)
     {
         if(kstore->value->kind.data.func_arg_ref.index < 8)
-            output << "\tsw a" << kstore->value->kind.data.func_arg_ref.index << ", " << env.GetAddr(kstore->dest) << "(sp)" << endl;
+            output << "\tsw a" << kstore->value->kind.data.func_arg_ref.index << ", " << dest << endl;
         else
         {
             output << "\tlw t0, " << (kstore->value->kind.data.func_arg_ref.index - 8) * 4 << "(sp)" << endl;
-            output << "\tsw t0, " << env.GetAddr(kstore->dest) << "(sp)" << endl;
+            output << "\tsw t0, " << dest << endl;
         }
     }
     else
     {
         load_to_reg(kstore->value, "t0");
-        output << "\tsw t0, " << env.GetAddr(kstore->dest) << "(sp)" << endl;
+        output << "\tsw t0, " << dest << endl;
     }
 }
 
@@ -106,6 +129,7 @@ void RISCVBuilder::gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int
 
 void RISCVBuilder::gen_riscv_value_branch(const koopa_raw_branch_t *kbranch)
 {
+    output << endl;
     load_to_reg(kbranch->cond, "t0");
     output << "\tbnez t0, " << kbranch->true_bb->name + 1 << endl;
     output << "\tj " << kbranch->false_bb->name + 1 << endl;
@@ -113,11 +137,13 @@ void RISCVBuilder::gen_riscv_value_branch(const koopa_raw_branch_t *kbranch)
 
 void RISCVBuilder::gen_riscv_value_jump(const koopa_raw_jump_t *kjump)
 {
+    output << endl;
     output << "\tj " << kjump->target->name + 1 << endl;
 }
 
 void RISCVBuilder::gen_riscv_value_call(const koopa_raw_call_t *kcall, int addr)
 {
+    output << endl;
     for (int i = 0; i < kcall->args.len && i < 8; i++)
     {
         char reg[3] = "a0";

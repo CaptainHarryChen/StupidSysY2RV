@@ -55,6 +55,7 @@ class RISCVBuilder
     void gen_riscv_value(koopa_raw_value_t kval);
 
     void load_to_reg(koopa_raw_value_t kval, const char *reg);
+    void gen_riscv_value_global_alloc(koopa_raw_value_t kalloc);
     void gen_riscv_value_load(const koopa_raw_load_t *kload, int addr);
     void gen_riscv_value_store(const koopa_raw_store_t *kstore);
     void gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int addr);

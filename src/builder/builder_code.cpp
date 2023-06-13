@@ -83,6 +83,9 @@ void RISCVBuilder::gen_riscv_value(koopa_raw_value_t kval)
         break;
     case KOOPA_RVT_ALLOC:
         break;
+    case KOOPA_RVT_GLOBAL_ALLOC:
+        gen_riscv_value_global_alloc(kval);
+        break;
     case KOOPA_RVT_LOAD:
         gen_riscv_value_load(&kval->kind.data.load, addr);
         break;
@@ -129,6 +132,8 @@ void RISCVBuilder::traversal_raw_slice(const koopa_raw_slice_t *rs)
 
 void RISCVBuilder::build(const koopa_raw_program_t *raw)
 {
+    output << ".data" << endl;
+    traversal_raw_slice(&raw->values);
     output << ".text" << endl;
     traversal_raw_slice(&raw->funcs);
 }
