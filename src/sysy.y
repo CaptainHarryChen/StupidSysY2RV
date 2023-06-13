@@ -13,11 +13,18 @@
 #include <map>
 #include "ast/ast.hpp"
 
-std::vector<InstSet> env_stk;
-std::vector<BaseAST*> value_list;
-std::vector<BaseAST*> func_list;
-std::vector<BaseAST*> fparams;
-std::vector<std::vector<BaseAST*>> rparams;
+static std::vector<InstSet> env_stk;
+static std::vector<BaseAST*> value_list;
+static std::vector<BaseAST*> func_list;
+static std::vector<BaseAST*> fparams;
+static std::vector<std::vector<BaseAST*>> rparams;
+
+enum InitValType
+{
+    array,
+    exp
+};
+static std::vector<std::vector<BaseAST*>> arr_list;
 
 void add_inst(InstType instType, BaseAST *ast)
 {
@@ -50,7 +57,7 @@ void yyerror(std::unique_ptr<BaseAST> &ast, const char *s);
 
 // 非终结符的类型定义
 %type <base_ast_val> FuncDef BType Block IfExp
-%type <base_ast_val> LVal Number
+%type <base_ast_val> LVal Number InitVal
 %type <base_ast_val> Exp PrimaryExp UnaryExp MulExp AddExp RelExp EqExp LAndExp LOrExp
 
 %%
@@ -183,6 +190,15 @@ ConstDef
     : IDENT '=' Exp {
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::ConstDecl, new ConstDefAST($1->c_str(), exp));
+    }
+    | IDENT '[' Exp ']' '=' InitVal {
+        auto sz = std::unique_ptr<BaseAST>($3);
+        auto initval = std::unique_ptr<BaseAST>($6);
+        add_inst(InstType::ArrayDecl, new ArrayDefAST($1->c_str(), sz, initval));
+    };
+    | IDENT '[' Exp ']' {
+        auto sz = std::unique_ptr<BaseAST>($3);
+        add_inst(InstType::ArrayDecl, new ArrayDefAST($1->c_str(), sz));
     };
 
 VarDecl : BType VarDefList ';';
@@ -194,11 +210,42 @@ VarDef
     | IDENT '=' Exp {
         auto exp = std::unique_ptr<BaseAST>($3);
         add_inst(InstType::Decl, new VarDefAST($1->c_str(), exp));
+    }
+    | IDENT '[' Exp ']' '=' InitVal {
+        auto sz = std::unique_ptr<BaseAST>($3);
+        auto initval = std::unique_ptr<BaseAST>($6);
+        add_inst(InstType::ArrayDecl, new ArrayDefAST($1->c_str(), sz, initval));
+    };
+    | IDENT '[' Exp ']' {
+        auto sz = std::unique_ptr<BaseAST>($3);
+        add_inst(InstType::ArrayDecl, new ArrayDefAST($1->c_str(), sz));
+    }
+
+InitVal : Exp {
+        auto exp = std::unique_ptr<BaseAST>($1);
+        $$ = new InitValAST(exp);
+    }
+    | '{' {
+            arr_list.push_back(std::vector<BaseAST*>());
+        } ArrInitList '}' {
+        $$ = new InitValAST(arr_list[arr_list.size()-1]);
+        arr_list.pop_back();
+    };
+
+ArrInitList : InitVal {
+        arr_list[arr_list.size()-1].push_back($1);
+    } 
+    | ArrInitList ',' InitVal {
+        arr_list[arr_list.size()-1].push_back($3);
     };
 
 LVal
     : IDENT {
         $$ = new LValAST($1->c_str());
+    }
+    | IDENT '[' Exp ']' {
+        auto exp = std::unique_ptr<BaseAST>($3);
+        $$ = new LValAST($1->c_str(), exp);
     };
 
 Exp 

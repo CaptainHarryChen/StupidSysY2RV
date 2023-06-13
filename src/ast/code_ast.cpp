@@ -1,4 +1,5 @@
 #include "ast/code_ast.hpp"
+#include "ast/array_ast.hpp"
 
 void CompUnitAST::add_lib_funcs(std::vector<const void*> &funcs) const
 {
@@ -120,6 +121,8 @@ CompUnitAST::CompUnitAST(std::vector<BaseAST*> &_func_list, InstSet &_value_list
     {
         if(pa.first == Decl)
             value_list.push_back(make_pair(pa.first, std::unique_ptr<BaseAST>(new GlobalVarDefAST(pa.second))));
+        else if(pa.first == ArrayDecl)
+            value_list.push_back(make_pair(pa.first, std::unique_ptr<BaseAST>(new GlobalArrayDefAST(pa.second))));
         else
             value_list.push_back(make_pair(pa.first, std::move(pa.second)));
     }

@@ -25,9 +25,24 @@ public:
 
 class LValAST : public BaseAST
 {
+    enum ValType
+    {
+        Num,
+        Array
+    };
 public:
+    ValType type;
     std::string name;
-    LValAST(const char *_name) : name(_name) {}
+    std::unique_ptr<BaseAST> idx;
+    LValAST(const char *_name) : name(_name) 
+    {
+        type = Num;
+    }
+    LValAST(const char *_name, std::unique_ptr<BaseAST> &_exp) : name(_name)
+    {
+        type = Array;
+        idx = std::move(_exp);
+    } 
 
     // 将变量作为左值返回（返回该左值的变量本身）
     void *koopa_leftvalue() const override
@@ -49,6 +64,24 @@ public:
             res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
             res->kind.tag = KOOPA_RVT_LOAD;
             res->kind.data.load.src = (koopa_raw_value_t)var.number;
+            block_maintainer.AddInst(res);
+        }
+        else if (var.type == LValSymbol::Array)
+        {
+            koopa_raw_value_data *get = new koopa_raw_value_data();
+            get->ty = make_int_pointer_type();
+            get->name = nullptr;
+            get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+            get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+            get->kind.data.get_elem_ptr.src = (koopa_raw_value_t)var.number;
+            get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)idx->build_koopa_values();
+            block_maintainer.AddInst(get);
+            
+            res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+            res->name = nullptr;
+            res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+            res->kind.tag = KOOPA_RVT_LOAD;
+            res->kind.data.load.src = get;
             block_maintainer.AddInst(res);
         }
         return res;

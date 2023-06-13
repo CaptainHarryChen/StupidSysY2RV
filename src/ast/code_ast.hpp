@@ -9,6 +9,7 @@ enum InstType
 {
     ConstDecl,
     Decl,
+    ArrayDecl,
     Stmt,
     Branch,
     While,
@@ -37,7 +38,7 @@ public:
         add_lib_funcs(funcs);
         for(auto &pa : value_list)
         {
-            assert(pa.first == ConstDecl || pa.first == Decl);
+            assert(pa.first == ConstDecl || pa.first == Decl || pa.first == ArrayDecl);
             if(pa.first == ConstDecl)
                 pa.second->build_koopa_values();
             else
@@ -471,6 +472,7 @@ public:
         VarDefAST *var = dynamic_cast<VarDefAST*>(vardef_ast.release());
         name = var->name;
         exp = std::move(var->exp);
+        delete var;
     }
 
     void *build_koopa_values() const override

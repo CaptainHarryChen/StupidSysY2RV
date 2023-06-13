@@ -61,6 +61,17 @@ koopa_raw_type_kind* make_int_pointer_type()
     return res;
 }
 
+koopa_raw_value_data *make_koopa_interger(int x)
+{
+    koopa_raw_value_data *res = new koopa_raw_value_data();
+    res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    res->name = nullptr;
+    res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+    res->kind.tag = KOOPA_RVT_INTEGER;
+    res->kind.data.integer.value = x;
+    return res;
+}
+
 koopa_raw_value_data *JumpInst(koopa_raw_basic_block_t target)
 {
     koopa_raw_value_data *res = new koopa_raw_value_data();
