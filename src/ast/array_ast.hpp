@@ -13,6 +13,7 @@ class InitValAST : public BaseAST
     std::vector<koopa_raw_value_t> cache;
 
 public:
+    bool is_const = false;
     ValType type;
     std::unique_ptr<BaseAST> exp;
     std::vector<std::unique_ptr<InitValAST>> arr_list;
@@ -36,7 +37,12 @@ public:
         {
             auto &t = arr_list[i];
             if(t->type == Exp)
-                buf.push_back((koopa_raw_value_t)t->exp->build_koopa_values());
+            {
+                if(is_const)
+                    buf.push_back(make_koopa_interger(t->exp->CalcValue()));
+                else
+                    buf.push_back((koopa_raw_value_t)t->exp->build_koopa_values());
+            }
             else
             {
                 int new_align_pos = align_pos + 1;
@@ -211,6 +217,7 @@ public:
         res->kind.tag = KOOPA_RVT_GLOBAL_ALLOC;
         if(init_val)
         {
+            init_val->is_const = true;
             init_val->preprocess(sz);
             res->kind.data.global_alloc.init = init_val->make_aggerate(sz);
         }
