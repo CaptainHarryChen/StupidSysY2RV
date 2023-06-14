@@ -134,7 +134,7 @@ void RISCVBuilder::gen_riscv_value_get_ptr(const koopa_raw_get_ptr_t *kget, int 
     output << endl;
 
     int src_addr = env.GetAddr(kget->src);
-    if(src_addr > 2048 || src_addr < -2048)
+    if(src_addr > 2047 || src_addr < -2048)
     {
         output << "\tli t0, " << src_addr << endl;
         output << "\tadd t0, sp, t0" << endl;
@@ -162,7 +162,7 @@ void RISCVBuilder::gen_riscv_value_get_elem_ptr(const koopa_raw_get_elem_ptr_t *
     else
     {
         int src_addr = env.GetAddr(kget->src);
-        if(src_addr > 2048 || src_addr < -2048)
+        if(src_addr > 2047 || src_addr < -2048)
         {
             output << "\tli t0, " << src_addr << endl;
             output << "\tadd t0, sp, t0" << endl;
