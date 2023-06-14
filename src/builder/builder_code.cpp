@@ -28,8 +28,14 @@ int RISCVBuilder::calc_blk_size(koopa_raw_basic_block_t kblk, bool &has_call)
 
 int RISCVBuilder::calc_inst_size(koopa_raw_value_t kval)
 {
-    // TODO : array ???
-    switch(kval->ty->tag)
+    if(kval->kind.tag == KOOPA_RVT_ALLOC)
+        return calc_type_size(kval->ty->data.pointer.base);
+    return calc_type_size(kval->ty);
+}
+
+int RISCVBuilder::calc_type_size(koopa_raw_type_t ty)
+{
+    switch(ty->tag)
     {
     case KOOPA_RTT_INT32:
         return 4;
@@ -37,8 +43,9 @@ int RISCVBuilder::calc_inst_size(koopa_raw_value_t kval)
         return 0;
     case KOOPA_RTT_POINTER:
         return 4;
+    case KOOPA_RTT_ARRAY:
+        return calc_type_size(ty->data.array.base) * ty->data.array.len;
     }
-    return 0;
 }
 
 void RISCVBuilder::gen_riscv_func(koopa_raw_function_t kfunc)
@@ -54,13 +61,30 @@ void RISCVBuilder::gen_riscv_func(koopa_raw_function_t kfunc)
     if(size != 0)
     {
         size = ((size - 1) / 16 + 1) * 16;
-        output << "\taddi sp, sp, " << -size << endl;
+        if(-size < -2048 || -size > 2047)
+        {
+            output << "\tli t0, " << -size << endl;
+            output << "\tadd sp, sp, t0" << endl;
+        }
+        else
+            output << "\taddi sp, sp, " << -size << endl;
     }
     if(has_call)
-        output << "\tsw ra, " << size-4 << "(sp)" << endl;
+    {
+        int offset = size - 4;
+        if(offset < -2048 || offset > 2047)
+        {
+            output << "\tli t0, " << offset << endl;
+            output << "\tadd t0, sp, t0" << endl;
+            output << "\tsw ra, 0(t0)" << endl;
+        }
+        else
+            output << "\tsw ra, " << offset << "(sp)" << endl;
+    }
     env.NewEnv(size, has_call);
     env.cur -= (has_call ? 4 : 0);
     // blocks
+    current_func_name = kfunc->name + 1;
     traversal_raw_slice(&kfunc->bbs);
 }
 
@@ -69,7 +93,7 @@ void RISCVBuilder::gen_riscv_block(koopa_raw_basic_block_t kblk)
     //TODO: params
     //TODO: used_by
     output << endl;
-    output << kblk->name + 1 << ":" << endl;
+    output << current_func_name << "_" << kblk->name + 1 << ":" << endl;
     traversal_raw_slice(&kblk->insts);
 }
 
@@ -91,6 +115,12 @@ void RISCVBuilder::gen_riscv_value(koopa_raw_value_t kval)
         break;
     case KOOPA_RVT_STORE:
         gen_riscv_value_store(&kval->kind.data.store);
+        break;
+    case KOOPA_RVT_GET_PTR:
+        gen_riscv_value_get_ptr(&kval->kind.data.get_ptr, addr);
+        break;
+    case KOOPA_RVT_GET_ELEM_PTR:
+        gen_riscv_value_get_elem_ptr(&kval->kind.data.get_elem_ptr, addr);
         break;
     case KOOPA_RVT_BINARY:
         gen_riscv_value_binary(&kval->kind.data.binary, addr);

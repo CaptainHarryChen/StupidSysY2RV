@@ -6,7 +6,7 @@
 
 #include <koopa.h>
 
-using std::ostream, std::endl, std::map;
+using std::ostream, std::endl, std::map, std::string;
 
 class RISCVBuilder
 {
@@ -43,11 +43,13 @@ class RISCVBuilder
     };
 
     Env env;
+    string current_func_name;
     ostream &output;
 
     static int calc_func_size(koopa_raw_function_t kfunc, bool &has_call);
     static int calc_blk_size(koopa_raw_basic_block_t kblk, bool &has_call);
     static int calc_inst_size(koopa_raw_value_t kval);
+    static int calc_type_size(koopa_raw_type_t ty);
 
     void traversal_raw_slice(const koopa_raw_slice_t *rs);
     void gen_riscv_func(koopa_raw_function_t kfunc);
@@ -55,9 +57,13 @@ class RISCVBuilder
     void gen_riscv_value(koopa_raw_value_t kval);
 
     void load_to_reg(koopa_raw_value_t kval, const char *reg);
+    void store_to_stack(int addr, const char *reg);
+    void gen_riscv_value_aggregate(koopa_raw_value_t kval);
     void gen_riscv_value_global_alloc(koopa_raw_value_t kalloc);
     void gen_riscv_value_load(const koopa_raw_load_t *kload, int addr);
     void gen_riscv_value_store(const koopa_raw_store_t *kstore);
+    void gen_riscv_value_get_ptr(const koopa_raw_get_ptr_t *kget, int addr);
+    void gen_riscv_value_get_elem_ptr(const koopa_raw_get_elem_ptr_t *kget, int addr);
     void gen_riscv_value_binary(const koopa_raw_binary_t *kbinary, int addr);
     void gen_riscv_value_branch(const koopa_raw_branch_t *kbranch);
     void gen_riscv_value_jump(const koopa_raw_jump_t *kjump);

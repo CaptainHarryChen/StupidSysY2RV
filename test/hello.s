@@ -1,98 +1,75 @@
 .data
-.globl a
-a:
-	.word 10
 .text
-.globl inc
-inc:
-	addi sp, sp, -16
+.globl init
+init:
+	addi sp, sp, -32
 
-entry_inc:
+init_entry_init:
 
-	la t0, a
-	lw t0, 0(t0)
-	sw t0, 12(sp)
-
-	lw t0, 12(sp)
-	li t1, 1
-	add t0, t0, t1
-	sw t0, 8(sp)
-
-	la t1, a
-	lw t0, 8(sp)
-	sw t0, 0(t1)
-
-	la t0, a
-	lw t0, 0(t0)
-	sw t0, 4(sp)
-
-	lw a0, 4(sp)
-	addi sp, sp, 16
-	ret
-.globl print_a
-print_a:
-	addi sp, sp, -16
-	sw ra, 12(sp)
-
-entry_print_a:
-
-	la t0, a
-	lw t0, 0(t0)
-	sw t0, 8(sp)
-
-	lw a0, 8(sp)
-	call putint
-
-	li a0, 10
-	call putch
-
-	lw ra, 12(sp)
-	addi sp, sp, 16
-	ret
-.globl main
-main:
-	addi sp, sp, -48
-	sw ra, 44(sp)
-
-entry_main:
-
-	li t0, 0
-	sw t0, 40(sp)
-
-	j while_entry
-
-while_entry:
-
-	lw t0, 40(sp)
-	sw t0, 36(sp)
-
-	lw t0, 36(sp)
-	li t1, 10
-	slt t0, t0, t1
-	sw t0, 32(sp)
-
-	lw t0, 32(sp)
-	bnez t0, while_body
-	j end
-
-while_body:
-
-	call inc
 	sw a0, 28(sp)
 
-	li t0, 1
+	lw t0, 28(sp)
 	sw t0, 24(sp)
 
-	lw t0, 24(sp)
+	addi t0, sp, 24
+	lw t0, 0(t0)
+	li t1, 1
+	li t2, 400
+	mul t1, t1, t2
+	add t0, t0, t1
 	sw t0, 20(sp)
 
-	lw t0, 20(sp)
+	addi t0, sp, 20
+	lw t0, 0(t0)
 	li t1, 2
+	li t2, 40
+	mul t1, t1, t2
 	add t0, t0, t1
 	sw t0, 16(sp)
 
-	lw t0, 16(sp)
+	addi t0, sp, 16
+	lw t0, 0(t0)
+	li t1, 3
+	li t2, 4
+	mul t1, t1, t2
+	add t0, t0, t1
+	sw t0, 12(sp)
+
+	lw t1, 12(sp)
+	li t0, 3
+	sw t0, 0(t1)
+
+	addi sp, sp, 32
+	ret
+.globl main
+main:
+	li t0, -4032
+	add sp, sp, t0
+	li t0, 4028
+	add t0, sp, t0
+	sw ra, 0(t0)
+
+main_entry_main:
+
+	li t0, 0
 	sw t0, 24(sp)
+
+	addi t0, sp, 28
+	li t1, 0
+	li t2, 400
+	mul t1, t1, t2
+	add t0, t0, t1
+	sw t0, 20(sp)
+
+	addi t0, sp, 28
+	li t1, 0
+	li t2, 400
+	mul t1, t1, t2
+	add t0, t0, t1
+	sw t0, 16(sp)
+
+	lw a0, 16(sp)
+	call init
 
 	lw t0, 24(sp)
 	sw t0, 12(sp)
@@ -103,24 +80,10 @@ while_body:
 	li a0, 10
 	call putch
 
-	call print_a
-
-	lw t0, 40(sp)
-	sw t0, 8(sp)
-
-	lw t0, 8(sp)
-	li t1, 1
-	add t0, t0, t1
-	sw t0, 4(sp)
-
-	lw t0, 4(sp)
-	sw t0, 40(sp)
-
-	j while_entry
-
-end:
-
 	li a0, 0
-	lw ra, 44(sp)
-	addi sp, sp, 48
+	li t6, 4028
+	add t6, t6, sp
+	lw ra, 0(t6)
+	li t0, 4032
+	add sp, sp, t0
 	ret

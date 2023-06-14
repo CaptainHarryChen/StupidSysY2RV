@@ -14,16 +14,28 @@ decl @starttime()
 
 decl @stoptime()
 
-fun @QuickSort(@arr: *i32) {
-%entry_QuickSort:
-  @arr_0 = alloc *i32
+fun @init(@arr: *[[i32, 10], 10]) {
+%entry_init:
+  @arr_0 = alloc *[[i32, 10], 10]
   store @arr, @arr_0
   %0 = load @arr_0
-  call @QuickSort(%0)
+  %1 = getptr %0, 1
+  %2 = getelemptr %1, 2
+  %3 = getelemptr %2, 3
+  store 3, %3
   ret
 }
 
 fun @main(): i32 {
 %entry_main:
+  @arr = alloc [[[i32, 10], 10], 10]
+  @sum = alloc i32
+  store 0, @sum
+  %4 = getelemptr @arr, 0
+  %5 = getelemptr @arr, 0
+  call @init(%5)
+  %6 = load @sum
+  call @putint(%6)
+  call @putch(10)
   ret 0
 }
