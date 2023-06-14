@@ -52,24 +52,73 @@ public:
         {
             koopa_raw_value_data *get;
             koopa_raw_value_t src = (koopa_raw_value_t)symbol_list.GetSymbol(name).number;
-            for(auto &i : idx)
+            if(src->ty->data.pointer.base->tag == KOOPA_RTT_POINTER)
             {
-                get = new koopa_raw_value_data();
-                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
-                ty->tag = KOOPA_RTT_POINTER;
-                ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
-                get->ty = ty;
-                get->name = nullptr;
-                get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
-                get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
-                get->kind.data.get_elem_ptr.src = src;
-                get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
-                block_maintainer.AddInst(get);
-                src = get;
+                koopa_raw_value_t src = (koopa_raw_value_t)symbol_list.GetSymbol(name).number;
+                koopa_raw_value_data *load0 = new koopa_raw_value_data();
+                load0->ty = src->ty->data.pointer.base;
+                load0->name = nullptr;
+                load0->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                load0->kind.tag = KOOPA_RVT_LOAD;
+                load0->kind.data.load.src = src;
+                block_maintainer.AddInst(load0);
+
+                bool first = true;
+                src = load0;
+                for(auto &i : idx)
+                {
+                    get = new koopa_raw_value_data();
+                    koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                    if(first)
+                    {
+                        get->ty = src->ty;
+                        get->name = nullptr;
+                        get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                        get->kind.tag = KOOPA_RVT_GET_PTR;
+                        get->kind.data.get_ptr.src = src;
+                        get->kind.data.get_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                        first = false;
+                    }
+                    else
+                    {
+                        ty->tag = KOOPA_RTT_POINTER;
+                        ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                        get->ty = ty;
+                        get->name = nullptr;
+                        get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                        get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                        get->kind.data.get_elem_ptr.src = src;
+                        get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                    }
+                    block_maintainer.AddInst(get);
+                    src = get;
+                }
+            }
+            else
+            {
+                for(auto &i : idx)
+                {
+                    get = new koopa_raw_value_data();
+                    koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                    ty->tag = KOOPA_RTT_POINTER;
+                    ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                    get->ty = ty;
+                    get->name = nullptr;
+                    get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                    get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                    get->kind.data.get_elem_ptr.src = src;
+                    get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                    block_maintainer.AddInst(get);
+                    src = get;
+                }
             }
             return get;
         }
-        return (void *)symbol_list.GetSymbol(name).number;
+        else if (type == Num)
+        {
+            return (void *)symbol_list.GetSymbol(name).number;
+        }
+        return nullptr;
     }
 
     // 将变量作为右值返回（读取变量里存储的值）
@@ -90,9 +139,10 @@ public:
         }
         else if (var.type == LValSymbol::Array)
         {
+            bool need_load = false;
             koopa_raw_value_data *get;
-            koopa_raw_value_t src = (koopa_raw_value_t)var.number;
-            for(auto &i : idx)
+            koopa_raw_value_data *src = (koopa_raw_value_data*)var.number;
+            if(idx.empty())
             {
                 get = new koopa_raw_value_data();
                 koopa_raw_type_kind *ty = new koopa_raw_type_kind();
@@ -103,17 +153,125 @@ public:
                 get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
                 get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
                 get->kind.data.get_elem_ptr.src = src;
-                get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                get->kind.data.get_elem_ptr.index = make_koopa_interger(0);
+                block_maintainer.AddInst(get);
+            }
+            else
+            {
+                for(auto &i : idx)
+                {
+                    get = new koopa_raw_value_data();
+                    koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                    ty->tag = KOOPA_RTT_POINTER;
+                    ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                    get->ty = ty;
+                    get->name = nullptr;
+                    get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                    get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                    get->kind.data.get_elem_ptr.src = src;
+                    get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                    block_maintainer.AddInst(get);
+                    src = get;
+                    if(ty->data.pointer.base->tag == KOOPA_RTT_INT32)
+                        need_load = true;
+                }
+            }
+            if(need_load)
+            {
+                res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+                res->name = nullptr;
+                res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                res->kind.tag = KOOPA_RVT_LOAD;
+                res->kind.data.load.src = get;
+                block_maintainer.AddInst(res);
+            }
+            else if(src->ty->data.pointer.base->tag == KOOPA_RTT_ARRAY)
+            {
+                res = new koopa_raw_value_data();
+                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                ty->tag = KOOPA_RTT_POINTER;
+                ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                res->ty = ty;
+                res->name = nullptr;
+                res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                res->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                res->kind.data.get_elem_ptr.src = src;
+                res->kind.data.get_elem_ptr.index = make_koopa_interger(0);
+                block_maintainer.AddInst(res);
+            }
+            else
+                res = src;
+        }
+        else if (var.type == LValSymbol::Pointer)
+        {
+            koopa_raw_value_data *src = (koopa_raw_value_data*)var.number;
+            koopa_raw_value_data *load0 = new koopa_raw_value_data();
+            load0->ty = src->ty->data.pointer.base;
+            load0->name = nullptr;
+            load0->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+            load0->kind.tag = KOOPA_RVT_LOAD;
+            load0->kind.data.load.src = src;
+            block_maintainer.AddInst(load0);
+
+            bool need_load = false;
+            bool first = true;
+            koopa_raw_value_data *get;
+            src = load0;
+            for(auto &i : idx)
+            {
+                get = new koopa_raw_value_data();
+                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                if(first)
+                {
+                    get->ty = src->ty;
+                    get->name = nullptr;
+                    get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                    get->kind.tag = KOOPA_RVT_GET_PTR;
+                    get->kind.data.get_ptr.src = src;
+                    get->kind.data.get_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                    first = false;
+                }
+                else
+                {
+                    ty->tag = KOOPA_RTT_POINTER;
+                    ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                    get->ty = ty;
+                    get->name = nullptr;
+                    get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                    get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                    get->kind.data.get_elem_ptr.src = src;
+                    get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                }
                 block_maintainer.AddInst(get);
                 src = get;
+                if(get->ty->data.pointer.base->tag == KOOPA_RTT_INT32)
+                    need_load = true;
             }
-            
-            res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
-            res->name = nullptr;
-            res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
-            res->kind.tag = KOOPA_RVT_LOAD;
-            res->kind.data.load.src = get;
-            block_maintainer.AddInst(res);
+            if(need_load)
+            {
+                res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+                res->name = nullptr;
+                res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                res->kind.tag = KOOPA_RVT_LOAD;
+                res->kind.data.load.src = get;
+                block_maintainer.AddInst(res);
+            }
+            else if(src->ty->data.pointer.base->tag == KOOPA_RTT_ARRAY)
+            {
+                res = new koopa_raw_value_data();
+                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                ty->tag = KOOPA_RTT_POINTER;
+                ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                res->ty = ty;
+                res->name = nullptr;
+                res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                res->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                res->kind.data.get_elem_ptr.src = src;
+                res->kind.data.get_elem_ptr.index = make_koopa_interger(0);
+                block_maintainer.AddInst(res);
+            }
+            else
+                res = src;
         }
         return res;
     }

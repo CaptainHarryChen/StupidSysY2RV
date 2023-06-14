@@ -1,5 +1,3 @@
-global @ga = alloc [i32, 10], zeroinit
-
 decl @getint(): i32
 
 decl @getch(): i32
@@ -16,9 +14,16 @@ decl @starttime()
 
 decl @stoptime()
 
+fun @QuickSort(@arr: *i32) {
+%entry_QuickSort:
+  @arr_0 = alloc *i32
+  store @arr, @arr_0
+  %0 = load @arr_0
+  call @QuickSort(%0)
+  ret
+}
+
 fun @main(): i32 {
 %entry_main:
-  %0 = getelemptr @ga, 3
-  store 2, %0
   ret 0
 }

@@ -1,6 +1,8 @@
-int ga[10];
+void QuickSort(int arr[])
+{
+    QuickSort(arr);
+}
 
-int main() {
-  ga[3] = 2;
-  return 0;
+int main(){
+    return 0;
 }

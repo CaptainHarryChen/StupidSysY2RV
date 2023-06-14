@@ -16,6 +16,7 @@ struct LValSymbol
         Const,
         Var,
         Array,
+        Pointer,
         Function
     } type;
     void *number;

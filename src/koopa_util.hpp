@@ -16,6 +16,7 @@ koopa_raw_type_kind* make_int_pointer_type();
 koopa_raw_value_data *make_koopa_interger(int x);
 koopa_raw_value_data *JumpInst(koopa_raw_basic_block_t target);
 koopa_raw_value_data *AllocIntInst(const std::string &name);
+koopa_raw_value_data *AllocType(const std::string &name, koopa_raw_type_t ty);
 koopa_raw_value_data *ZeroInit(koopa_raw_type_kind *_type = nullptr);
 
 char *new_char_arr(std::string str);

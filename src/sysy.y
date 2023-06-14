@@ -113,6 +113,13 @@ FuncFParams : FuncFParam | FuncFParams ',' FuncFParam;
 FuncFParam
     : INT IDENT {
         fparams.push_back(new FuncFParamAST(FuncFParamAST::Int, $2->c_str(), fparams.size()));
+    }
+    | INT IDENT '[' ']' {
+        fparams.push_back(new FuncFParamAST(FuncFParamAST::Array, $2->c_str(), fparams.size(), arr_size));
+    }
+    | INT IDENT '[' ']' ArraySizeList {
+        fparams.push_back(new FuncFParamAST(FuncFParamAST::Array, $2->c_str(), fparams.size(), arr_size));
+        arr_size.clear();
     };
 
 Block :
@@ -131,7 +138,10 @@ BlockItems : BlockItem | BlockItem BlockItems ;
 BlockItem : Decl | Stmt ;
 
 Stmt
-    : RETURN Exp ';' {
+    : RETURN ';' {
+        add_inst(InstType::Stmt, new ReturnAST());
+    }
+    | RETURN Exp ';' {
         auto number = std::unique_ptr<BaseAST>($2);
         add_inst(InstType::Stmt, new ReturnAST(number));
     } | LVal '=' Exp ';' {

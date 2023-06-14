@@ -110,6 +110,19 @@ koopa_raw_value_data *AllocIntInst(const std::string &name)
     return res;
 }
 
+koopa_raw_value_data *AllocType(const std::string &name, koopa_raw_type_t ty)
+{
+    koopa_raw_value_data *res = new koopa_raw_value_data();
+    koopa_raw_type_kind *tty = new koopa_raw_type_kind();
+    tty->tag = KOOPA_RTT_POINTER;
+    tty->data.pointer.base = ty;
+    res->ty = tty;
+    res->name = new_char_arr(name);
+    res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+    res->kind.tag = KOOPA_RVT_ALLOC;
+    return res;
+}
+
 koopa_raw_value_data *ZeroInit(koopa_raw_type_kind *_type)
 {
     koopa_raw_value_data *res = new koopa_raw_value_data();

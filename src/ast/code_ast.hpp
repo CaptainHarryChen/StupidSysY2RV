@@ -77,16 +77,41 @@ class FuncFParamAST : public BaseAST
 public:
     enum ParamType
     {
-        Int
+        Int,
+        Array
     } type;
     std::string name;
     int index;
+    std::vector<std::unique_ptr<BaseAST>> sz_exp;
 
     FuncFParamAST(ParamType _type, const char *_name, int _index) : type(_type), name(_name), index(_index) {}
+    FuncFParamAST(ParamType _type, const char *_name, int _index, std::vector<BaseAST*> &_sz_Exp) : type(_type), name(_name), index(_index)
+    {
+        for(auto e : _sz_Exp)
+            sz_exp.emplace_back(e);
+    }
 
     void *get_koopa_type() const
     {
-        return simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+        if(type == Array)
+        {
+            if(sz_exp.empty())
+                return make_int_pointer_type();
+            else
+            {
+                std::vector<int> sz;
+                for(auto &e : sz_exp)
+                    sz.push_back(e->CalcValue());
+                koopa_raw_type_kind *ty = make_array_type(sz);
+                koopa_raw_type_kind *tty = new koopa_raw_type_kind();
+                tty->tag = KOOPA_RTT_POINTER;
+                tty->data.pointer.base = ty;
+                return tty;
+            }
+        }
+        else if (type == Int)
+            return simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+        return nullptr;
     }
 
     void *build_koopa_values() const override
@@ -190,8 +215,11 @@ public:
         for(size_t i = 0; i < fparams.size(); i++)
         {
             auto &fp = fparams[i];
-            koopa_raw_value_data *allo = AllocIntInst("@" + fp->name);
-            symbol_list.AddSymbol(fp->name, LValSymbol(LValSymbol::Var, allo));
+            koopa_raw_value_data *allo = AllocType("@" + fp->name, ((koopa_raw_value_t)par[i])->ty);
+            if(allo->ty->data.pointer.base->tag == KOOPA_RTT_POINTER)
+                symbol_list.AddSymbol(fp->name, LValSymbol(LValSymbol::Pointer, allo));
+            else
+                symbol_list.AddSymbol(fp->name, LValSymbol(LValSymbol::Var, allo));
             block_maintainer.AddInst(allo);
             koopa_raw_value_data *sto = new koopa_raw_value_data();
             sto->ty = simple_koopa_raw_type_kind(KOOPA_RTT_UNIT);
@@ -216,6 +244,10 @@ class ReturnAST : public BaseAST
 {
 public:
     std::unique_ptr<BaseAST> ret_num;
+    ReturnAST()
+    {
+        ret_num = nullptr;
+    }
     ReturnAST(std::unique_ptr<BaseAST> &_ret_num)
     {
         ret_num = std::move(_ret_num);
@@ -227,7 +259,10 @@ public:
         res->name = nullptr;
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_RETURN;
-        res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values();
+        if(ret_num)
+            res->kind.data.ret.value = (const koopa_raw_value_data *)ret_num->build_koopa_values();
+        else
+            res->kind.data.ret.value = nullptr;
         block_maintainer.AddInst(res);
         return res;
     }
