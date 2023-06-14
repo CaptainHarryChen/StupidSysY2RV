@@ -54,7 +54,7 @@ int main(int argc, const char *argv[])
         }
         koopa_dump_to_file(kp, output);
     }
-    else if(strcmp(mode, "-riscv") == 0)
+    else if(strcmp(mode, "-riscv") == 0 || strcmp(mode, "-perf") == 0)
     {
         std::cout << "generate koopa file..." << std::endl;
         koopa_program_t kp;
