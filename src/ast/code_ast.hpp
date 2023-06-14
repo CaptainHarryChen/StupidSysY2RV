@@ -519,7 +519,7 @@ public:
         res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
         res->kind.tag = KOOPA_RVT_GLOBAL_ALLOC;
         if(exp)
-            res->kind.data.global_alloc.init = (koopa_raw_value_data*)exp->build_koopa_values();
+            res->kind.data.global_alloc.init = make_koopa_interger(exp->CalcValue());//(koopa_raw_value_data*)exp->build_koopa_values();
         else
             res->kind.data.global_alloc.init = ZeroInit();
         block_maintainer.AddInst(res);

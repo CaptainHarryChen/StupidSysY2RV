@@ -251,7 +251,12 @@ void RISCVBuilder::gen_riscv_value_branch(const koopa_raw_branch_t *kbranch)
 {
     output << endl;
     load_to_reg(kbranch->cond, "t0");
-    output << "\tbnez t0, " << current_func_name << "_" << kbranch->true_bb->name + 1 << endl;
+    // output << "\tbnez t0, " << current_func_name << "_" << kbranch->true_bb->name + 1 << endl;
+    // 解决跳转超限问题
+    output << "\tbeqz t0, " << current_func_name << "_" << "skip" << magic_cnt_num << endl;
+    output << "\tj " << current_func_name << "_" << kbranch->true_bb->name + 1 << endl;
+    output << current_func_name << "_" << "skip" << magic_cnt_num++ << ":" << endl;
+
     output << "\tj " << current_func_name << "_" << kbranch->false_bb->name + 1 << endl;
 }
 

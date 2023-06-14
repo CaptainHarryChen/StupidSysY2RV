@@ -1,679 +1,433 @@
 .data
-.globl ball
-ball:
-	.zero 44
-.globl temp
-temp:
-	.zero 88
 .text
-.globl dfs
-dfs:
-	addi sp, sp, -352
-	sw ra, 348(sp)
+.globl my_getint
+my_getint:
+	addi sp, sp, -128
+	sw ra, 124(sp)
 
-dfs_entry_dfs:
+my_getint_entry_my_getint:
 
-	sw a0, 344(sp)
-
-	lw t0, 344(sp)
-	sw t0, 340(sp)
-
-	lw t0, 340(sp)
-	li t1, 10
-	sgt t0, t0, t1
-	sw t0, 336(sp)
-
-	lw t0, 336(sp)
-	bnez t0, dfs_true
-	j dfs_false
-
-dfs_true:
-
-	li a0, 1
-	lw ra, 348(sp)
-	addi sp, sp, 352
-	ret
-
-dfs_false:
-
-	j dfs_end
-
-dfs_end:
-
-	li t0, 1
-	sw t0, 332(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 328(sp)
-
-	addi t0, sp, 328
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 324(sp)
-
-	lw t0, 324(sp)
-	lw t0, 0(t0)
-	sw t0, 320(sp)
-
-	lw t0, 320(sp)
-	li t1, 0
-	xor t0, t0, t1
-	seqz t0, t0
-	sw t0, 316(sp)
-
-	lw t0, 316(sp)
-	li t1, 0
-	xor t0, t0, t1
-	seqz t0, t0
-	sw t0, 312(sp)
-
-	lw t0, 312(sp)
-	bnez t0, dfs_true_0
-	j dfs_end_0
-
-dfs_true_0:
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 308(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 304(sp)
-
-	addi t0, sp, 304
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 300(sp)
-
-	lw t0, 300(sp)
-	lw t0, 0(t0)
-	sw t0, 296(sp)
-
-	addi t0, sp, 308
-	lw t0, 0(t0)
-	lw t1, 296(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 292(sp)
-
-	lw t0, 292(sp)
-	lw t0, 0(t0)
-	sw t0, 288(sp)
-
-	lw t0, 344(sp)
-	sw t0, 284(sp)
-
-	la t0, ball
-	lw t1, 284(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 280(sp)
-
-	lw t0, 280(sp)
-	lw t0, 0(t0)
-	sw t0, 276(sp)
-
-	lw t0, 288(sp)
-	lw t1, 276(sp)
-	slt t0, t0, t1
-	sw t0, 272(sp)
-
-	lw t0, 272(sp)
-	li t1, 0
-	xor t0, t0, t1
-	snez t0, t0
-	sw t0, 268(sp)
-
-	lw t0, 268(sp)
-	sw t0, 332(sp)
-
-	j dfs_end_0
-
-dfs_end_0:
-
-	lw t0, 332(sp)
-	sw t0, 264(sp)
-
-	lw t0, 264(sp)
-	bnez t0, dfs_true_1
-	j dfs_false_0
-
-dfs_true_1:
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 260(sp)
-
-	addi t0, sp, 260
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 256(sp)
-
-	lw t0, 256(sp)
-	lw t0, 0(t0)
-	sw t0, 252(sp)
-
-	lw t0, 252(sp)
-	li t1, 1
-	add t0, t0, t1
-	sw t0, 248(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 244(sp)
-
-	addi t0, sp, 244
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 240(sp)
-
-	lw t1, 240(sp)
-	lw t0, 248(sp)
-	sw t0, 0(t1)
-
-	lw t0, 344(sp)
-	sw t0, 236(sp)
-
-	la t0, ball
-	lw t1, 236(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 232(sp)
-
-	lw t0, 232(sp)
-	lw t0, 0(t0)
-	sw t0, 228(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 224(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 220(sp)
-
-	addi t0, sp, 220
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 216(sp)
-
-	lw t0, 216(sp)
-	lw t0, 0(t0)
-	sw t0, 212(sp)
-
-	addi t0, sp, 224
-	lw t0, 0(t0)
-	lw t1, 212(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 208(sp)
-
-	lw t1, 208(sp)
-	lw t0, 228(sp)
-	sw t0, 0(t1)
-
-	lw t0, 344(sp)
-	sw t0, 204(sp)
-
-	lw t0, 204(sp)
-	li t1, 1
-	add t0, t0, t1
-	sw t0, 200(sp)
-
-	lw a0, 200(sp)
-	call dfs
-	sw a0, 196(sp)
-
-	lw t0, 196(sp)
-	bnez t0, dfs_true_2
-	j dfs_false_1
-
-dfs_false_0:
-
-	j dfs_end_2
-
-dfs_true_2:
-
-	li a0, 1
-	lw ra, 348(sp)
-	addi sp, sp, 352
-	ret
-
-dfs_false_1:
-
-	j dfs_end_1
-
-dfs_end_2:
-
-	li t0, 1
-	sw t0, 192(sp)
-
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 188(sp)
-
-	addi t0, sp, 188
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 184(sp)
-
-	lw t0, 184(sp)
-	lw t0, 0(t0)
-	sw t0, 180(sp)
-
-	lw t0, 180(sp)
-	li t1, 0
-	xor t0, t0, t1
-	seqz t0, t0
-	sw t0, 176(sp)
-
-	lw t0, 176(sp)
-	li t1, 0
-	xor t0, t0, t1
-	seqz t0, t0
-	sw t0, 172(sp)
-
-	lw t0, 172(sp)
-	bnez t0, dfs_true_3
-	j dfs_end_3
-
-dfs_end_1:
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 168(sp)
-
-	addi t0, sp, 168
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 164(sp)
-
-	lw t0, 164(sp)
-	lw t0, 0(t0)
-	sw t0, 160(sp)
-
-	lw t0, 160(sp)
-	li t1, 1
-	sub t0, t0, t1
-	sw t0, 156(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 152(sp)
-
-	addi t0, sp, 152
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 148(sp)
-
-	lw t1, 148(sp)
-	lw t0, 156(sp)
-	sw t0, 0(t1)
-
-	j dfs_end_2
-
-dfs_true_3:
-
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 144(sp)
-
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 140(sp)
-
-	addi t0, sp, 140
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 136(sp)
-
-	lw t0, 136(sp)
-	lw t0, 0(t0)
-	sw t0, 132(sp)
-
-	addi t0, sp, 144
-	lw t0, 0(t0)
-	lw t1, 132(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 128(sp)
-
-	lw t0, 128(sp)
-	lw t0, 0(t0)
-	sw t0, 124(sp)
-
-	lw t0, 344(sp)
+	li t0, 0
 	sw t0, 120(sp)
 
-	la t0, ball
-	lw t1, 120(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 116(sp)
+	j my_getint_while_entry
 
-	lw t0, 116(sp)
-	lw t0, 0(t0)
-	sw t0, 112(sp)
+my_getint_while_entry:
 
-	lw t0, 124(sp)
-	lw t1, 112(sp)
-	slt t0, t0, t1
+	li t0, 1
+	bnez t0, my_getint_skip0
+	j my_getint_while_body
+my_getint_skip0:
+	j my_getint_end
+
+my_getint_while_body:
+
+	call getch
+	sw a0, 112(sp)
+
+	lw t0, 112(sp)
+	li t1, 48
+	sub t0, t0, t1
 	sw t0, 108(sp)
 
 	lw t0, 108(sp)
-	li t1, 0
-	xor t0, t0, t1
-	snez t0, t0
+	sw t0, 116(sp)
+
+	li t0, 1
 	sw t0, 104(sp)
 
-	lw t0, 104(sp)
-	sw t0, 192(sp)
-
-	j dfs_end_3
-
-dfs_end_3:
-
-	lw t0, 192(sp)
+	lw t0, 116(sp)
 	sw t0, 100(sp)
 
 	lw t0, 100(sp)
-	bnez t0, dfs_true_4
-	j dfs_false_2
-
-dfs_true_4:
-
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
+	li t1, 0
+	slt t0, t0, t1
 	sw t0, 96(sp)
 
-	addi t0, sp, 96
-	lw t0, 0(t0)
+	lw t0, 96(sp)
 	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
+	xor t0, t0, t1
+	seqz t0, t0
 	sw t0, 92(sp)
 
 	lw t0, 92(sp)
-	lw t0, 0(t0)
+	bnez t0, my_getint_skip1
+	j my_getint_true
+my_getint_skip1:
+	j my_getint_end_0
+
+my_getint_end:
+
+	lw t0, 116(sp)
 	sw t0, 88(sp)
 
 	lw t0, 88(sp)
-	li t1, 1
-	add t0, t0, t1
+	sw t0, 120(sp)
+
+	j my_getint_while_entry_0
+
+my_getint_true:
+
+	lw t0, 116(sp)
 	sw t0, 84(sp)
 
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
+	lw t0, 84(sp)
+	li t1, 9
+	sgt t0, t0, t1
 	sw t0, 80(sp)
 
-	addi t0, sp, 80
-	lw t0, 0(t0)
+	lw t0, 80(sp)
 	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
+	xor t0, t0, t1
+	snez t0, t0
 	sw t0, 76(sp)
 
-	lw t1, 76(sp)
-	lw t0, 84(sp)
-	sw t0, 0(t1)
+	lw t0, 76(sp)
+	sw t0, 104(sp)
 
-	lw t0, 344(sp)
+	j my_getint_end_0
+
+my_getint_end_0:
+
+	lw t0, 104(sp)
 	sw t0, 72(sp)
 
-	la t0, ball
-	lw t1, 72(sp)
-	li t2, 4
-	mul t1, t1, t2
+	lw t0, 72(sp)
+	bnez t0, my_getint_skip2
+	j my_getint_true_0
+my_getint_skip2:
+	j my_getint_false
+
+my_getint_while_entry_0:
+
+	li t0, 1
+	bnez t0, my_getint_skip3
+	j my_getint_while_body_0
+my_getint_skip3:
+	j my_getint_end_1
+
+my_getint_true_0:
+
+	j my_getint_while_entry
+
+my_getint_false:
+
+	j my_getint_end
+
+my_getint_while_body_0:
+
+	call getch
+	sw a0, 68(sp)
+
+	lw t0, 68(sp)
+	li t1, 48
+	sub t0, t0, t1
+	sw t0, 64(sp)
+
+	lw t0, 64(sp)
+	sw t0, 116(sp)
+
+	li t0, 0
+	sw t0, 60(sp)
+
+	lw t0, 116(sp)
+	sw t0, 56(sp)
+
+	lw t0, 56(sp)
+	li t1, 0
+	slt t0, t0, t1
+	xori t0, t0, 1
+	sw t0, 52(sp)
+
+	lw t0, 52(sp)
+	li t1, 0
+	xor t0, t0, t1
+	snez t0, t0
+	sw t0, 48(sp)
+
+	lw t0, 48(sp)
+	bnez t0, my_getint_skip4
+	j my_getint_true_1
+my_getint_skip4:
+	j my_getint_end_2
+
+my_getint_end_1:
+
+	lw t0, 120(sp)
+	sw t0, 44(sp)
+
+	lw a0, 44(sp)
+	lw ra, 124(sp)
+	addi sp, sp, 128
+	ret
+
+my_getint_true_1:
+
+	lw t0, 116(sp)
+	sw t0, 40(sp)
+
+	lw t0, 40(sp)
+	li t1, 9
+	sgt t0, t0, t1
+	xori t0, t0, 1
+	sw t0, 36(sp)
+
+	lw t0, 36(sp)
+	li t1, 0
+	xor t0, t0, t1
+	snez t0, t0
+	sw t0, 32(sp)
+
+	lw t0, 32(sp)
+	sw t0, 60(sp)
+
+	j my_getint_end_2
+
+my_getint_end_2:
+
+	lw t0, 60(sp)
+	sw t0, 28(sp)
+
+	lw t0, 28(sp)
+	bnez t0, my_getint_skip5
+	j my_getint_true_2
+my_getint_skip5:
+	j my_getint_false_0
+
+my_getint_true_2:
+
+	lw t0, 120(sp)
+	sw t0, 24(sp)
+
+	lw t0, 24(sp)
+	li t1, 10
+	mul t0, t0, t1
+	sw t0, 20(sp)
+
+	lw t0, 116(sp)
+	sw t0, 16(sp)
+
+	lw t0, 20(sp)
+	lw t1, 16(sp)
 	add t0, t0, t1
+	sw t0, 12(sp)
+
+	lw t0, 12(sp)
+	sw t0, 120(sp)
+
+	j my_getint_end_3
+
+my_getint_false_0:
+
+	j my_getint_end_1
+
+my_getint_end_3:
+
+	j my_getint_while_entry_0
+.globl my_putint
+my_putint:
+	addi sp, sp, -160
+	sw ra, 156(sp)
+
+my_putint_entry_my_putint:
+
+	sw a0, 152(sp)
+
+	li t0, 0
+	sw t0, 84(sp)
+
+	j my_putint_while_entry
+
+my_putint_while_entry:
+
+	lw t0, 152(sp)
+	sw t0, 80(sp)
+
+	lw t0, 80(sp)
+	li t1, 0
+	sgt t0, t0, t1
+	sw t0, 76(sp)
+
+	lw t0, 76(sp)
+	bnez t0, my_putint_skip6
+	j my_putint_while_body
+my_putint_skip6:
+	j my_putint_end
+
+my_putint_while_body:
+
+	lw t0, 152(sp)
+	sw t0, 72(sp)
+
+	lw t0, 72(sp)
+	li t1, 10
+	rem t0, t0, t1
 	sw t0, 68(sp)
 
 	lw t0, 68(sp)
-	lw t0, 0(t0)
+	li t1, 48
+	add t0, t0, t1
 	sw t0, 64(sp)
 
-	la t0, temp
-	li t1, 1
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
+	lw t0, 84(sp)
 	sw t0, 60(sp)
 
-	la t0, temp
-	li t1, 1
-	li t2, 44
+	addi t0, sp, 88
+	lw t1, 60(sp)
+	li t2, 4
 	mul t1, t1, t2
 	add t0, t0, t1
 	sw t0, 56(sp)
 
-	addi t0, sp, 56
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 52(sp)
-
-	lw t0, 52(sp)
-	lw t0, 0(t0)
-	sw t0, 48(sp)
-
-	addi t0, sp, 60
-	lw t0, 0(t0)
-	lw t1, 48(sp)
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 44(sp)
-
-	lw t1, 44(sp)
+	lw t1, 56(sp)
 	lw t0, 64(sp)
 	sw t0, 0(t1)
 
-	lw t0, 344(sp)
+	lw t0, 152(sp)
+	sw t0, 52(sp)
+
+	lw t0, 52(sp)
+	li t1, 10
+	div t0, t0, t1
+	sw t0, 48(sp)
+
+	lw t0, 48(sp)
+	sw t0, 152(sp)
+
+	lw t0, 84(sp)
+	sw t0, 44(sp)
+
+	lw t0, 44(sp)
+	li t1, 1
+	add t0, t0, t1
 	sw t0, 40(sp)
 
 	lw t0, 40(sp)
-	li t1, 1
-	add t0, t0, t1
+	sw t0, 84(sp)
+
+	j my_putint_while_entry
+
+my_putint_end:
+
+	j my_putint_while_entry_0
+
+my_putint_while_entry_0:
+
+	lw t0, 84(sp)
 	sw t0, 36(sp)
 
-	lw a0, 36(sp)
-	call dfs
-	sw a0, 32(sp)
+	lw t0, 36(sp)
+	li t1, 0
+	sgt t0, t0, t1
+	sw t0, 32(sp)
 
 	lw t0, 32(sp)
-	bnez t0, dfs_true_5
-	j dfs_false_3
+	bnez t0, my_putint_skip7
+	j my_putint_while_body_0
+my_putint_skip7:
+	j my_putint_end_0
 
-dfs_false_2:
+my_putint_while_body_0:
 
-	j dfs_end_5
-
-dfs_true_5:
-
-	li a0, 1
-	lw ra, 348(sp)
-	addi sp, sp, 352
-	ret
-
-dfs_false_3:
-
-	j dfs_end_4
-
-dfs_end_5:
-
-	li a0, 0
-	lw ra, 348(sp)
-	addi sp, sp, 352
-	ret
-
-dfs_end_4:
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
+	lw t0, 84(sp)
 	sw t0, 28(sp)
 
-	addi t0, sp, 28
-	lw t0, 0(t0)
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
+	lw t0, 28(sp)
+	li t1, 1
+	sub t0, t0, t1
 	sw t0, 24(sp)
 
 	lw t0, 24(sp)
-	lw t0, 0(t0)
+	sw t0, 84(sp)
+
+	lw t0, 84(sp)
 	sw t0, 20(sp)
 
-	lw t0, 20(sp)
-	li t1, 1
-	sub t0, t0, t1
-	sw t0, 16(sp)
-
-	la t0, temp
-	li t1, 0
-	li t2, 44
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 12(sp)
-
-	addi t0, sp, 12
-	lw t0, 0(t0)
-	li t1, 0
+	addi t0, sp, 88
+	lw t1, 20(sp)
 	li t2, 4
 	mul t1, t1, t2
 	add t0, t0, t1
-	sw t0, 8(sp)
+	sw t0, 16(sp)
 
-	lw t1, 8(sp)
 	lw t0, 16(sp)
-	sw t0, 0(t1)
+	lw t0, 0(t0)
+	sw t0, 12(sp)
 
-	j dfs_end_5
+	lw a0, 12(sp)
+	call putch
+
+	j my_putint_while_entry_0
+
+my_putint_end_0:
+
+	lw ra, 156(sp)
+	addi sp, sp, 160
+	ret
 .globl main
 main:
-	addi sp, sp, -32
-	sw ra, 28(sp)
+	addi sp, sp, -48
+	sw ra, 44(sp)
 
 main_entry_main:
 
-	la t0, ball
+	call my_getint
+	sw a0, 36(sp)
+
+	lw t0, 36(sp)
+	sw t0, 40(sp)
+
+	j main_while_entry
+
+main_while_entry:
+
+	lw t0, 40(sp)
+	sw t0, 32(sp)
+
+	lw t0, 32(sp)
 	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
+	sgt t0, t0, t1
+	sw t0, 28(sp)
+
+	lw t0, 28(sp)
+	bnez t0, main_skip8
+	j main_while_body
+main_skip8:
+	j main_end
+
+main_while_body:
+
+	call my_getint
+	sw a0, 20(sp)
+
+	lw t0, 20(sp)
 	sw t0, 24(sp)
 
-	la t0, ball
-	li t1, 0
-	li t2, 4
-	mul t1, t1, t2
-	add t0, t0, t1
-	sw t0, 20(sp)
+	lw t0, 24(sp)
+	sw t0, 16(sp)
 
-	lw a0, 20(sp)
-	call getarray
-	sw a0, 16(sp)
-
-	li a0, 1
-	call dfs
-	sw a0, 8(sp)
-
-	lw t0, 8(sp)
-	sw t0, 12(sp)
-
-	lw t0, 12(sp)
-	sw t0, 4(sp)
-
-	lw a0, 4(sp)
-	call putint
+	lw a0, 16(sp)
+	call my_putint
 
 	li a0, 10
 	call putch
 
+	lw t0, 40(sp)
+	sw t0, 12(sp)
+
+	lw t0, 12(sp)
+	li t1, 1
+	sub t0, t0, t1
+	sw t0, 8(sp)
+
+	lw t0, 8(sp)
+	sw t0, 40(sp)
+
+	j main_while_entry
+
+main_end:
+
 	li a0, 0
-	lw ra, 28(sp)
-	addi sp, sp, 32
+	lw ra, 44(sp)
+	addi sp, sp, 48
 	ret

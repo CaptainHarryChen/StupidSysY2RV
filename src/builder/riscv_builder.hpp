@@ -42,6 +42,7 @@ class RISCVBuilder
         }
     };
 
+    int magic_cnt_num = 0;
     Env env;
     string current_func_name;
     ostream &output;
