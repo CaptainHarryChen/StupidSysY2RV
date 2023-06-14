@@ -61,6 +61,22 @@ koopa_raw_type_kind* make_int_pointer_type()
     return res;
 }
 
+koopa_raw_type_kind* make_array_type(const std::vector<int> &sz, int st_pos)
+{
+    std::vector<koopa_raw_type_kind*> ty_list;
+    for(size_t i = st_pos; i < sz.size(); i++)
+    {
+        koopa_raw_type_kind *new_rt = new koopa_raw_type_kind();
+        new_rt->tag = KOOPA_RTT_ARRAY;
+        new_rt->data.array.len = sz[i];
+        ty_list.push_back(new_rt);
+    }
+    ty_list[ty_list.size() - 1]->data.array.base = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    for(size_t i = 0; i < ty_list.size() - 1; i++)
+        ty_list[i]->data.array.base = ty_list[i + 1];
+    return ty_list[0];
+}
+
 koopa_raw_value_data *make_koopa_interger(int x)
 {
     koopa_raw_value_data *res = new koopa_raw_value_data();
@@ -94,10 +110,13 @@ koopa_raw_value_data *AllocIntInst(const std::string &name)
     return res;
 }
 
-koopa_raw_value_data *ZeroInit()
+koopa_raw_value_data *ZeroInit(koopa_raw_type_kind *_type)
 {
     koopa_raw_value_data *res = new koopa_raw_value_data();
-    res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
+    if(_type)
+        res->ty = _type;
+    else
+        res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
     res->name = nullptr;
     res->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
     res->kind.tag = KOOPA_RVT_ZERO_INIT;

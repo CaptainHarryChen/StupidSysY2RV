@@ -33,20 +33,42 @@ class LValAST : public BaseAST
 public:
     ValType type;
     std::string name;
-    std::unique_ptr<BaseAST> idx;
+    std::vector<std::unique_ptr<BaseAST>> idx;
     LValAST(const char *_name) : name(_name) 
     {
         type = Num;
     }
-    LValAST(const char *_name, std::unique_ptr<BaseAST> &_exp) : name(_name)
+    LValAST(const char *_name, std::vector<BaseAST*> &_idx) : name(_name)
     {
         type = Array;
-        idx = std::move(_exp);
+        for(auto &i : _idx)
+            idx.emplace_back(i);
     } 
 
     // 将变量作为左值返回（返回该左值的变量本身）
     void *koopa_leftvalue() const override
     {
+        if(type == Array)
+        {
+            koopa_raw_value_data *get;
+            koopa_raw_value_t src = (koopa_raw_value_t)symbol_list.GetSymbol(name).number;
+            for(auto &i : idx)
+            {
+                get = new koopa_raw_value_data();
+                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                ty->tag = KOOPA_RTT_POINTER;
+                ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                get->ty = ty;
+                get->name = nullptr;
+                get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                get->kind.data.get_elem_ptr.src = src;
+                get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                block_maintainer.AddInst(get);
+                src = get;
+            }
+            return get;
+        }
         return (void *)symbol_list.GetSymbol(name).number;
     }
 
@@ -68,14 +90,23 @@ public:
         }
         else if (var.type == LValSymbol::Array)
         {
-            koopa_raw_value_data *get = new koopa_raw_value_data();
-            get->ty = make_int_pointer_type();
-            get->name = nullptr;
-            get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
-            get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
-            get->kind.data.get_elem_ptr.src = (koopa_raw_value_t)var.number;
-            get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)idx->build_koopa_values();
-            block_maintainer.AddInst(get);
+            koopa_raw_value_data *get;
+            koopa_raw_value_t src = (koopa_raw_value_t)var.number;
+            for(auto &i : idx)
+            {
+                get = new koopa_raw_value_data();
+                koopa_raw_type_kind *ty = new koopa_raw_type_kind();
+                ty->tag = KOOPA_RTT_POINTER;
+                ty->data.pointer.base = src->ty->data.pointer.base->data.array.base;
+                get->ty = ty;
+                get->name = nullptr;
+                get->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
+                get->kind.tag = KOOPA_RVT_GET_ELEM_PTR;
+                get->kind.data.get_elem_ptr.src = src;
+                get->kind.data.get_elem_ptr.index = (koopa_raw_value_t)i->build_koopa_values();
+                block_maintainer.AddInst(get);
+                src = get;
+            }
             
             res->ty = simple_koopa_raw_type_kind(KOOPA_RTT_INT32);
             res->name = nullptr;

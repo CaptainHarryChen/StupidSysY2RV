@@ -1,3 +1,5 @@
+global @ga = alloc [i32, 10], zeroinit
+
 decl @getint(): i32
 
 decl @getch(): i32
@@ -16,9 +18,7 @@ decl @stoptime()
 
 fun @main(): i32 {
 %entry_main:
-  @a = alloc [i32, 10]
-  @b = alloc [i32, 10]
-  @c = alloc i32
-  @d = alloc [i32, 10]
+  %0 = getelemptr @ga, 3
+  store 2, %0
   ret 0
 }

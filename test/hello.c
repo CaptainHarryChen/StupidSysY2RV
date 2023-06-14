@@ -1,6 +1,6 @@
+int ga[10];
+
 int main() {
-  int a[10];
-  const int len = 10;
-  int b[8 + 2], c, d[len];
+  ga[3] = 2;
   return 0;
 }
