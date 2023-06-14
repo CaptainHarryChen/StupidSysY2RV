@@ -212,6 +212,7 @@ public:
 
         symbol_list.NewEnv();
         block_maintainer.AddNewBasicBlock(entry_block);
+        block_maintainer.SetCurrentFunction(res);
         for(size_t i = 0; i < fparams.size(); i++)
         {
             auto &fp = fparams[i];

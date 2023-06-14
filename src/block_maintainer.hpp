@@ -9,10 +9,15 @@
 
 class BlockMaintainer
 {
+    koopa_raw_function_t current_func;
     std::vector<const void *> current_insts_buf;
     std::vector<const void *> *basic_block_buf;
 
 public:
+    void SetCurrentFunction(koopa_raw_function_t _cur_func)
+    {
+        current_func = _cur_func;
+    }
     void SetBasicBlockBuf(std::vector<const void *> *_basic_block_buf)
     {
         basic_block_buf = _basic_block_buf;
@@ -40,7 +45,10 @@ public:
                 ret->name = nullptr;
                 ret->used_by = empty_koopa_rs(KOOPA_RSIK_VALUE);
                 ret->kind.tag = KOOPA_RVT_RETURN;
-                ret->kind.data.ret.value = nullptr;
+                if(current_func->ty->data.function.ret->tag == KOOPA_RTT_UNIT)
+                    ret->kind.data.ret.value = nullptr;
+                else
+                    ret->kind.data.ret.value = make_koopa_interger(0);
                 current_insts_buf.push_back(ret);
             }
             if (!last_block->insts.buffer)
